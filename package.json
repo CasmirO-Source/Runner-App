@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
     "test:unit": "node --test \"tests/unit/**/*.test.ts\"",
     "prepare": "node scripts/install-git-hooks.mjs",
-    "audit:check": "node scripts/audit-check.mjs"
+    "audit:check": "node scripts/audit-check.mjs",
+    "typecheck:functions": "node scripts/check-functions.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/barlow-condensed": "^0.4.1",
