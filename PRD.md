@@ -19,7 +19,7 @@ Owner: Cas
 
 ## 1. Product summary
 
-A competitive running app for friend groups. Friends join monthly leagues and compete on distance, with a live leaderboard and notifications built to trigger competitive spirit. Every runner gets a **Stride rating**, a single number for how good a runner they are. Friends can challenge each other to **1v1 duels**, including a handicap mode so runners of different levels compete fairly. Public matchmaking against strangers (the Arena) comes in a later version.
+A competitive running app for friend groups. Friends join monthly leagues and compete on distance, with a live leaderboard and notifications built to trigger competitive spirit. Every runner gets a **Stride rating**, a single number for how good a runner they are. Friends can challenge each other to **1v1 duels**, including a handicap mode so runners of different levels compete fairly. Paying members get **Pro**: personal running analytics and a coach that explains their habits, predicts their race times and tells them what to do to hit a goal, in the way chess.com's premium review helps players improve. Public matchmaking against strangers (the Arena) comes in a later version.
 
 **Core motivation:** not wanting to lose in front of your mates. No real money is ever involved.
 
@@ -51,7 +51,10 @@ Do not build:
 - User-uploaded profile photos (preset avatars only)
 - Strava API integration (its terms forbid showing a user's data to other users)
 - A web app version
-- Any AI feature other than the screenshot reader
+- Any AI feature other than the screenshot reader (Pro insights in version 1 are calculated by rules in code, not written by AI)
+- Storing GPS routes or any location trail from a run
+- Height, weight or body composition, and any comparison or advice based on them
+- Training plans that change day by day, injury diagnosis or any medical advice
 
 ---
 
@@ -112,6 +115,7 @@ Reference points: a 25 minute 5 km runner doing 15 km a week scores about 920 (P
 ### 5.1 Accounts
 - Sign in with Apple, Google and email one-time code (all via Supabase Auth). Email code comes first (milestone 1) because it works in Expo Go. Apple and Google sign-in are added in milestone 3, once the paid Apple developer account and a development build exist, and must be working before TestFlight.
 - Profile: display name (3 to 20 characters, letters, numbers, spaces, underscores), preset avatar, home city (optional), date of birth for an 18+ check (store only "over 18: yes", not the date).
+- Optional, for Pro comparisons only and only after the user agrees: birth year (not full date) and sex (female, male, or prefer not to say). Both can be removed at any time. Without them, Pro still works but skips age and sex comparisons.
 - Display names run through a profanity filter and can be reported.
 - In-app account deletion that removes all personal data within 30 days (Apple requirement).
 - Data export on request (UK GDPR).
@@ -149,7 +153,44 @@ Copy is short, British, competitive banter, never abusive.
 - Duel challenge received, and the final 24 hours of a duel
 - Limits: at most 2 per day, no notifications 22:00 to 08:00 local time, each type can be switched off.
 
-### 5.6 Reporting and blocking
+### 5.6 Pro: running analytics and coach
+
+Inspired by chess.com's game review and coaching apps such as Runna: turn a runner's own data into plain-English advice. Everything is calculated by rules in server code from verified runs, so every number can be explained and tested. Free users see a locked preview with one real insight, to show what they are missing.
+
+**1. Pacing profile.** Using per-kilometre splits (section 6.2), classify each run and the runner's overall habit:
+- *Even pacer:* last kilometre within 3% of the first.
+- *Fast starter / fader:* first kilometre more than 5% quicker than average and the last more than 5% slower. Shows how often this happens ("You faded in 7 of your last 10 runs").
+- *Strong finisher:* last kilometre quicker than the first.
+- Advice linked to the pattern, for example "Start your next run 15 seconds per km slower than usual and see if you hold on to the end."
+
+**2. Habits.** Runs per week, favourite days and times, longest gap between runs, current and best streak, how consistent the last 8 weeks were.
+
+**3. Training load.** Weekly distance trend with a warning when a week is more than 30% higher than the average of the previous four ("Big jump this week. Most injuries come from increasing too fast.").
+
+**4. Fitness trend.** The runner's 5 km-equivalent time (section 4.3) plotted over time, plus their Stride history.
+
+**5. Race predictions.** Predicted times for 5 km, 10 km, half marathon and marathon from their best recent efforts (Riegel formula, section 4.3). Half and marathon predictions are marked "rough" unless the runner has done a run of at least 15 km or 25 km respectively in the last 8 weeks.
+
+**6. Goal planner.** The runner sets a goal ("5 km in under 25 minutes" or "run 10 km without stopping"). The app shows:
+- The target pace per km and the gap from today's level.
+- A realistic target date, assuming improvement of about 1% a month in 5 km-equivalent time for regular runners (faster for beginners), capped so it never promises unrealistic progress.
+- A simple weekly structure to get there: mostly easy runs, one faster session and one longer run, with target paces for each. Weekly distance never increases by more than 10% a week.
+- Progress towards the goal after every run.
+
+**7. How you compare.** An **age-graded score**: the runner's 5 km-equivalent compared with the world standard for their age and sex, using published age-grading tables (shown as a percentage, for example "62%: well above average for your age"). Needs the optional birth year and sex. Once enough users exist, also show where they rank among app users of the same Stride tier, age band and sex (only shown when the group has at least 50 runners, so no individual can be identified). **No height, weight or body composition comparisons** (see section 12).
+
+**8. Monthly report card.** A one-screen summary of the month (distance, best effort, pacing habit, biggest improvement, next focus) designed to be screenshotted and shared. This doubles as marketing.
+
+**9. Heart rate (if the runner's watch records it).** Average and maximum heart rate per run and an easy-run check ("Your easy runs are too hard: heart rate was in the top zone for 60% of the run"). Optional permission.
+
+**Rules for all Pro advice:**
+- Never medical advice. No diagnosis, no injury treatment, no weight-loss targets.
+- Every insight shows what data it is based on and how many runs.
+- If there are too few verified runs (fewer than 5 in the last 8 weeks), say so instead of guessing.
+- Wording is short, specific and British, matching section 13.1.
+- A visible note: "General training guidance, not medical advice. See a professional if you have pain or a health condition."
+
+### 5.7 Reporting and blocking
 - Report a display name or league name. Block a user (hides them from you and stops them joining your leagues).
 - Reports go to a review queue visible only to admins in the Supabase dashboard.
 
@@ -166,7 +207,8 @@ Copy is short, British, competitive banter, never abusive.
 | Manual entry | Unverified | No (friend leagues and straight duels only, unless "verified only" is set) |
 
 ### 6.2 Health sync
-- Read running workouts only: start time, duration, distance. Request the minimum permissions.
+- Read running workouts only: start time, duration, distance, and distance samples during the run (to work out pace for each kilometre). Heart rate is a separate, optional permission used only for Pro. Request the minimum permissions.
+- Store per-kilometre splits (time for each kilometre) in `run_splits`. Never read or store GPS routes or location.
 - Exclude workouts entered manually in Health (on iPhone, check the "was user entered" metadata flag).
 - Sync on app open and in the background where the platform allows.
 
@@ -187,17 +229,19 @@ Copy is short, British, competitive banter, never abusive.
 
 ## 7. Monetisation
 
-The friends test is fully free. Build the paywall in milestone 7 only.
+The friends test is fully free. It starts after milestone 6, and testers get Pro free once milestone 7 is done so they can give feedback on it. Build the paywall in milestone 8 only.
 
 | Plan | Price (to confirm after the friends test) | Includes |
 |---|---|---|
-| Free | £0 | Join unlimited leagues, up to 2 active duels, Stride rating, health sync |
-| Captain | £7.99 a month or £24.99 a year, 7-day free trial | Create 1 active league, up to 8 members; unlimited duels |
-| Captain Plus | £14.99 a month or £44.99 a year, 7-day free trial | Create up to 2 active leagues, up to 20 members each; unlimited duels |
+| Free | £0 | Join unlimited leagues, up to 2 active duels, Stride rating, health sync, basic stats (distance and runs per week), locked Pro preview |
+| Pro | £9.99 a month or £44.99 a year, 7-day free trial | Everything in section 5.6 (analytics, predictions, goal planner, age-graded score, report card), unlimited duels, create 1 active league of up to 8 members | Advertise as £3.75 a month, billed yearly
+| Pro Plus | £14.99 a month or £64.99 a year, 7-day free trial | Everything in Pro, plus up to 2 active leagues of up to 20 members each |
+
+- The annual plan is the highlighted option on the paywall.
 
 - Payments through Apple and Google, managed with RevenueCat.
 - **Entitlement checks happen on the server** (RevenueCat webhook updates a `subscriptions` table; the create-league function checks it). Never trust the app's own view of whether someone has paid.
-- If a Captain's subscription lapses, their leagues finish the current season, then become read-only.
+- If a subscription lapses, the runner's leagues finish the current season, then become read-only, and Pro screens return to the locked preview. Their run history is kept.
 
 ---
 
@@ -222,11 +266,11 @@ The friends test is fully free. Build the paywall in milestone 7 only.
 - Placeholder folders exist (`src/api`, `src/components`, `src/hooks`, `src/navigation`, `src/screens`, `src/lib`, `src/types`, `supabase/functions`, `supabase/migrations`). They may be restructured to fit Expo Router; explain any change.
 - Development Supabase project in London (`eu-west-2`). Row-level security is switched on automatically for new tables, and **new tables are not automatically exposed to the API**. Every table the app reads must therefore get explicit, minimal grants in its migration, matching section 8.2. Never fix an access error by granting broad access.
 - Local `.env` holds only `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`. The service role key is not, and must never be, in the app or `.env`. Commit a `.env.example` with placeholder values.
-- The production Supabase project does not exist yet. Create it only at milestone 8, from the same migrations.
+- The production Supabase project does not exist yet. Create it only at milestone 9, from the same migrations.
 
 ### 8.1 Data model
 
-`profiles`, `leagues`, `league_members`, `seasons`, `runs`, `rating_history`, `duels`, `subscriptions`, `reports`, `blocks`, `invite_codes`, `audit_log`, `rate_limits`, `screenshot_hashes`
+`profiles`, `leagues`, `league_members`, `seasons`, `runs`, `rating_history`, `duels`, `run_splits`, `goals`, `insights`, `subscriptions`, `reports`, `blocks`, `invite_codes`, `audit_log`, `rate_limits`, `screenshot_hashes`
 
 ### 8.2 Who can see and change what
 
@@ -238,6 +282,9 @@ The friends test is fully free. Build the paywall in milestone 7 only.
 | runs | Owner; members of a shared league see distance, date and source only | Edge Functions only (validation) |
 | rating_history | Owner | Database function only |
 | duels | The two runners in that duel | Edge Functions only (challenge, accept, decline, cancel); results by scheduled server job |
+| run_splits, heart rate data | Owner only, never other league members | Edge Functions only |
+| goals | Owner | Owner via Edge Function |
+| insights | Owner, and only with an active Pro entitlement (checked on the server); free users get only the preview insight | Server jobs only |
 | subscriptions | Owner | RevenueCat webhook only |
 | reports, blocks | Reporter / blocker only | Owner via Edge Function |
 | audit_log, rate_limits, screenshot_hashes | Nobody from the app | Server only |
@@ -337,6 +384,9 @@ Before submission, go through **Appendix A** item by item (all 49) and write the
 - **No third-party branding:** no Nike, Strava or other brand names or logos in the app name, domain, icons or store listing.
 - **Only licensed or original images and fonts.** Nothing taken from Google Images.
 - **No biometric data** collected or stored.
+- **No body image risks:** no height, weight or body composition fields, comparisons or targets. They add little to running predictions and comparisons like these can encourage unhealthy eating.
+- **Training guidance, not medical advice:** Pro must not diagnose, treat or claim health benefits it cannot prove. Store listing and app copy must not make medical claims (this could make the app a regulated medical device).
+- **Age-grading tables:** check the licence of whichever published tables are used and record it in `docs/asset-licences.md`.
 - **No AI support chatbot.** Support answers come from people or fixed help pages.
 - **Online Safety Act basics:** reporting, blocking and a written risk check, since display and league names are user-generated.
 - If launching in the US later: California "do not sell or share" rights and a registered copyright agent.
@@ -387,9 +437,10 @@ Sports broadcast scoreboard: bold, high contrast, numbers first. It should feel 
 6. Confirm screenshot values
 7. Duels: send a challenge, live head-to-head, results and rivalry record
 8. Profile: Stride, tier, rating history chart, duel record, season history
+8a. Pro: pacing profile, habits, training load, fitness trend, race predictions, goal planner, age-graded score, monthly report card (locked preview for free users)
 9. Create and join league
 10. Settings: notifications, privacy, data export, delete account, legal pages
-11. Paywall (milestone 7)
+11. Paywall (milestone 8)
 
 ---
 
@@ -421,11 +472,15 @@ Calculation, placement, tiers, slow-fall rule, history chart.
 Challenge, accept, decline, straight and handicap modes, baselines, live head-to-head, results, rivalry records, notification limits and quiet hours.
 *Accept:* tests cover baseline calculation (including the higher-of-two-averages rule), handicap scoring, ties, expiry of unanswered challenges, the one-duel-per-pair rule, and that only the two runners can see a duel. The friends test starts after this milestone.
 
-**M7. Subscriptions**
-RevenueCat, server-side entitlements, plan limits, lapse behaviour.
-*Accept:* a user without an active entitlement cannot create a league even by calling the Edge Function directly.
+**M7. Pro analytics**
+Per-kilometre splits, optional heart rate, pacing profile, habits, training load warning, fitness trend, race predictions, goal planner, age-graded score, monthly report card, locked preview.
+*Accept:* unit tests cover pacing classification, the 30% load warning, the 10% weekly increase cap in plans, prediction labels for half and marathon, the too-few-runs message, and the 50-runner minimum for comparisons. Advice is checked against section 12 (no medical or body advice). Splits and heart rate are visible only to their owner.
 
-**M8. Launch readiness**
+**M8. Subscriptions**
+RevenueCat, server-side entitlements, plan limits, lapse behaviour.
+*Accept:* a user without an active entitlement cannot create a league or read Pro insights even by calling the Edge Function or database directly.
+
+**M9. Launch readiness**
 Account deletion, data export, report and block, privacy policy, terms, consent, 18+, design audit against section 13.2, security audit against section 9.7, backups tested, store listings.
 *Accept:* every item in sections 9 and 12 and Appendices A, B and C checked off, with `docs/security-audit.md` complete for all 49 items in Appendix A.
 
@@ -433,7 +488,7 @@ Account deletion, data export, report and block, privacy policy, terms, consent,
 
 ## 15. Future versions (do not build yet)
 
-**The Arena:** public weekly lobbies of 10 runners matched within ±150 Stride (widening to ±300 if a lobby doesn't fill within 24 hours), verified runs only, with an out-of-band rule so anyone whose Stride jumps more than 150 above the lobby's range mid-week cannot win. Switch on city by city, or once a tier has enough active runners that no lobby sits empty. Then forfeits and forfeit videos, credit score, free-to-enter sponsored prize events, run clubs, pace-based lobbies, personal premium features (detailed stats, streak protection), Android widget and iPhone widget.
+**The Arena:** public weekly lobbies of 10 runners matched within ±150 Stride (widening to ±300 if a lobby doesn't fill within 24 hours), verified runs only, with an out-of-band rule so anyone whose Stride jumps more than 150 above the lobby's range mid-week cannot win. Switch on city by city, or once a tier has enough active runners that no lobby sits empty. Then forfeits and forfeit videos, credit score, free-to-enter sponsored prize events, run clubs, pace-based lobbies, streak protection, AI-written coaching summaries, Android widget and iPhone widget.
 
 ---
 
@@ -490,7 +545,7 @@ Every item must be met. Where an item cannot happen in this app, the audit must 
 | 45 | Publicly exposed internal dashboards | Supabase, Sentry, PostHog, RevenueCat, Expo, GitHub, Anthropic Console, Apple and Google accounts all use two-factor login. No dashboard is shared by public link. | 9.1 |
 | 46 | Missing security headers | Edge Function responses set the correct content type, `X-Content-Type-Options: nosniff` and `Cache-Control: no-store` for private data. Any web page also sends HSTS, a Content Security Policy and blocks being framed by other sites. | 9.4 |
 | 47 | Cookies missing HttpOnly, Secure or SameSite | The app does not use cookies. Any web page that sets cookies marks them HttpOnly, Secure and SameSite. | 12 |
-| 48 | Unencrypted sensitive data | HTTPS only. Supabase encrypts stored data. Tokens in secure storage. Only distance, duration and start time are read from health data. Date of birth is never stored. | 5.1, 6.2 |
+| 48 | Unencrypted sensitive data | HTTPS only. Supabase encrypts stored data. Tokens in secure storage. Only the minimum health data is read (section 6.2), with no GPS routes. Full date of birth is never stored. Splits and heart rate are visible only to their owner. | 5.1, 6.2 |
 | 49 | Poor tenant isolation in multi-user apps | Each league and each duel is walled off from every other. Tests prove a member of one league sees nothing from another. | 8.2, M1, M2 |
 
 ---
