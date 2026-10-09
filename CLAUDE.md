@@ -12,8 +12,9 @@ Standing instructions for every Claude Code session in this repository.
 
 | Milestone | Status |
 |---|---|
-| M1 Foundations | In progress |
-| M2 to M9 | Not started. Do not build. |
+| M1 Foundations | Done. Approved by the owner on 10 October 2026. See `docs/milestone-1-review.md`, including its open items |
+| M2 Leagues | Next. Not started: give the owner a plan first and wait for approval |
+| M3 to M9 | Not started. Do not build. |
 
 Update this table when the owner approves a milestone as done.
 

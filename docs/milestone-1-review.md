@@ -1,6 +1,6 @@
 # Milestone 1 review: Foundations
 
-Status: **ready for owner approval**. Milestone 1 is marked done in `CLAUDE.md` only after the owner approves this review.
+Status: **approved by the owner on 10 October 2026**. Milestone 1 is marked done in `CLAUDE.md`. The open items in section 8 remain the owner's to complete.
 
 - Reviewed: 10 October 2026, branch `m1-foundations`, commit `71903d5` (plus this document).
 - Development project: `svhdlybvqigqrfwywlib` (London, `eu-west-2`). No production project exists (milestone 9).
