@@ -1,0 +1,22 @@
+#!/bin/sh
+# Blocks any commit whose staged changes contain a secret.
+# Enabled by `git config core.hooksPath .githooks` (npm install does this automatically).
+#
+# Fails closed: if gitleaks is not installed the commit is blocked, because a
+# scan that silently does not run is worse than no scan at all.
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed, so this commit is blocked."
+  echo "Install it with: brew install gitleaks"
+  exit 1
+fi
+
+# --redact keeps any secret it finds out of the terminal output and logs.
+# --verbose shows the file, line and rule that matched (with the value hidden).
+gitleaks git --pre-commit --staged --redact --no-banner --verbose --config .gitleaks.toml
+status=$?
+if [ $status -ne 0 ]; then
+  echo "pre-commit: gitleaks found a possible secret in the staged changes. Commit blocked."
+  echo "Remove it, and if it was a real key, rotate it in its dashboard."
+fi
+exit $status

@@ -1,0 +1,29 @@
+# gitleaks configuration
+# Starts from gitleaks' built-in rules and adds rules for Supabase secrets.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-secret-key"
+description = "Supabase secret API key (new format). Server only, never in the app or Git."
+regex = '''sb_secret_[A-Za-z0-9_-]{20,}'''
+keywords = ["sb_secret_"]
+
+[[rules]]
+id = "supabase-service-role-jwt"
+description = "Supabase service role key (legacy JWT format). Server only, never in the app or Git."
+# Base64url of '"role":"service_role"' appears in the JWT payload in one of three alignments.
+# Anon keys (role "anon") do not match.
+regex = '''eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*(InJvbGUiOiJzZXJ2aWNlX3JvbGUi|Jyb2xlIjoic2VydmljZV9yb2xl|icm9sZSI6InNlcnZpY2Vfcm9s)[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+'''
+keywords = ["eyj"]
+
+[[rules]]
+id = "postgres-connection-string-with-password"
+description = "Postgres connection string containing a password"
+regex = '''postgres(?:ql)?://[^:\s/]+:[^@\s]+@[^\s'"]+'''
+keywords = ["postgres://", "postgresql://"]
+
+[allowlist]
+description = "Placeholder values in the committed example file"
+paths = ['''^\.env\.example$''']

@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Runner App",
+    "slug": "runner-app",
+    "version": "0.1.0",
+    "scheme": "runnerapp",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "predictiveBackGestureEnabled": false
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "sitemap": false
+        }
+      ],
+      "expo-status-bar",
+      "expo-secure-store",
+      "expo-font"
+    ]
+  }
+}
