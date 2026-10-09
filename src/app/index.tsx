@@ -19,8 +19,8 @@ export default function Home() {
         <Avatar avatarId={profile.avatar_id} />
         <Text variant="heading">{profile.display_name}</Text>
       </View>
-      <Text variant="title">You're in</Text>
-      <Text colour="textSecondary">Leagues are next. Soon you'll start one and invite your mates.</Text>
+      <Text variant="title">{"You're in"}</Text>
+      <Text colour="textSecondary">{"Leagues are next. Soon you'll start one and invite your mates."}</Text>
       <Button label="Sign out" variant="secondary" onPress={signOut} />
     </Screen>
   );

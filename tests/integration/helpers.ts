@@ -65,7 +65,7 @@ export function userClient(token: string): SupabaseClient {
   });
 }
 
-export async function deleteUsers(users: Array<TestUser | undefined>): Promise<void> {
+export async function deleteUsers(users: (TestUser | undefined)[]): Promise<void> {
   for (const user of users) {
     if (user) await fetch(`${env.apiUrl}/auth/v1/admin/users/${user.id}`, { method: 'DELETE', headers: adminHeaders });
   }

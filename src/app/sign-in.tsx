@@ -52,7 +52,7 @@ export default function SignIn() {
   return (
     <Screen>
       <Text variant="display">Sign in</Text>
-      <Text colour="textSecondary">We'll email you a 6-digit code. No passwords.</Text>
+      <Text colour="textSecondary">{"We'll email you a 6-digit code. No passwords."}</Text>
       <TextField
         label="Email"
         value={email}

@@ -10,9 +10,17 @@ import { readFileSync } from 'node:fs';
 const BLOCKING = new Set(['high', 'critical']);
 const MAX_REVIEW_DAYS = 31;
 
+// Options: --dir <folder> audits another folder (used for Edge Function
+// dependencies); --allow-unused-exceptions skips the "no longer applies"
+// check, since app-only exceptions do not apply there.
+const args = process.argv.slice(2);
+const dirIndex = args.indexOf('--dir');
+const auditDir = dirIndex >= 0 ? args[dirIndex + 1] : process.cwd();
+const allowUnused = args.includes('--allow-unused-exceptions');
+
 function runAudit() {
   try {
-    return execFileSync('npm', ['audit', '--json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return execFileSync('npm', ['audit', '--json'], { cwd: auditDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   } catch (error) {
     // npm audit exits non-zero whenever it finds anything; the report is still on stdout.
     if (error.stdout) return error.stdout;
@@ -36,7 +44,7 @@ for (const vuln of Object.values(report.vulnerabilities ?? {})) {
   }
 }
 
-const { exceptions } = JSON.parse(readFileSync('audit-exceptions.json', 'utf8'));
+const { exceptions } = JSON.parse(readFileSync(new URL('../audit-exceptions.json', import.meta.url), 'utf8'));
 const today = new Date().toISOString().slice(0, 10);
 const problems = [];
 
@@ -51,7 +59,7 @@ for (const ex of exceptions) {
   if (ex.reviewBy < today) {
     problems.push(`Exception ${ex.id} (${ex.package}) passed its review date ${ex.reviewBy}. Check for a fix, then renew or remove it.`);
   }
-  if (!found.has(ex.id)) {
+  if (!found.has(ex.id) && !allowUnused) {
     problems.push(`Exception ${ex.id} (${ex.package}) no longer matches any advisory. Remove it from audit-exceptions.json.`);
   }
 }

@@ -39,7 +39,12 @@ Needs Docker Desktop running and the local stack started (`npx supabase start`).
 | `npm run test:unit` | Pure logic: env guard, secure storage, contrast, age check, validation |
 | `npm run test:db` | pgTAP: RLS on every table, exact grants, function permissions, constraints, rate limiter |
 | `npm run test:integration` | Real API calls as two users against the local stack (the milestone 1 acceptance test) |
+| `npm run lint` | ESLint with Expo's rules, no warnings allowed |
+| `npm run design:check` | Appendix B: em dashes anywhere; gradients, blur, banned fonts and icons, emojis, raw colours and spacing in app code |
 | `npm run audit:check` | npm audit, with dated exceptions in `audit-exceptions.json` |
+| `npm run audit:functions` | Edge Function packages (deno.json): audited, and supabase-js kept equal to the app's |
+
+CI (`.github/workflows/ci.yml`) runs all of these on every push, plus gitleaks over the whole Git history.
 
 When a migration adds a table, function or grant, update the expected lists in `supabase/tests/database/00_security_baseline.test.sql` in the same change. That test failing is the point: it makes every new permission a deliberate decision.
 

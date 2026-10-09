@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { getMyProfile } from '@/api/profile';
 import { supabase } from '@/lib/supabase';
@@ -27,13 +27,16 @@ type AuthState = {
   signOut: () => Promise<void>;
 };
 
+type ProfileEntry = { userId: string; state: 'loading' | 'loaded' | 'error'; profile: MyProfile | null };
+
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
-  const [profile, setProfileState] = useState<MyProfile | null>(null);
-  const [profileState, setProfileStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  // The loaded profile is stored together with the user it belongs to, so a
+  // profile can never be shown for a different user after a switch.
+  const [entry, setEntry] = useState<ProfileEntry | null>(null);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,33 +55,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const userId = session?.user.id ?? null;
 
-  const loadProfile = useCallback(async () => {
-    setProfileStatus('loading');
-    const result = await getMyProfile();
-    if (result.ok) {
-      setProfileState(result.data);
-      setProfileStatus('loaded');
-    } else {
-      setProfileStatus('error');
-    }
-  }, []);
+  // Bumped by "Try again" to load the profile once more.
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    setProfileState(null);
-    if (userId) {
-      loadProfile();
-    } else {
-      setProfileStatus('idle');
-    }
-  }, [userId, loadProfile]);
+    if (!userId) return;
+    // If the user changes (or the screen goes away) before the answer comes
+    // back, the late answer is thrown away rather than shown for the wrong
+    // person.
+    let cancelled = false;
+    getMyProfile().then((result) => {
+      if (cancelled) return;
+      setEntry(
+        result.ok
+          ? { userId, state: 'loaded', profile: result.data }
+          : { userId, state: 'error', profile: null },
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, attempt]);
+
+  // Anything loaded for a different user is ignored until this user's
+  // profile arrives.
+  const current = entry && entry.userId === userId ? entry : null;
+  const profile = current?.profile ?? null;
 
   const status: AuthStatus = !sessionLoaded
     ? 'loading'
     : !session
       ? 'signedOut'
-      : profileState === 'error'
+      : current?.state === 'error'
         ? 'error'
-        : profileState !== 'loaded'
+        : current?.state !== 'loaded'
           ? 'loading'
           : profile
             ? 'ready'
@@ -91,11 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       pendingEmail,
       setPendingEmail,
-      setProfile: (p) => {
-        setProfileState(p);
-        setProfileStatus('loaded');
+      setProfile: (p) => setEntry({ userId: p.id, state: 'loaded', profile: p }),
+      retry: () => {
+        if (!userId) return;
+        setEntry({ userId, state: 'loading', profile: null });
+        setAttempt((n) => n + 1);
       },
-      retry: loadProfile,
       // Ends this session on the server as well as on the phone, so a copied
       // token stops working straight away (Appendix A #25). Other devices
       // stay signed in.
@@ -104,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setPendingEmail(null);
       },
     }),
-    [status, session, profile, pendingEmail, loadProfile],
+    [status, session, profile, pendingEmail, userId],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

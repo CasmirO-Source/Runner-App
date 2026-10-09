@@ -13,7 +13,10 @@
     "audit:check": "node scripts/audit-check.mjs",
     "typecheck:functions": "node scripts/check-functions.mjs",
     "test:db": "node scripts/test-db.mjs",
-    "test:integration": "node scripts/test-integration.mjs"
+    "test:integration": "node scripts/test-integration.mjs",
+    "lint": "eslint . --max-warnings 0",
+    "design:check": "node scripts/design-check.mjs",
+    "audit:functions": "node scripts/function-deps.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/barlow-condensed": "^0.4.1",
@@ -41,5 +44,8 @@
   },
   "overrides": {
     "react-dom": "$react"
+  },
+  "allowScripts": {
+    "unrs-resolver": false
   }
 }

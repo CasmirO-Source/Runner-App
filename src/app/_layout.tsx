@@ -47,7 +47,7 @@ function RootNavigator() {
     return (
       <Screen>
         <Text variant="title">No connection</Text>
-        <Text colour="textSecondary">We couldn't load your profile. Check your connection and try again.</Text>
+        <Text colour="textSecondary">{"We couldn't load your profile. Check your connection and try again."}</Text>
         <Button label="Try again" onPress={retry} />
         <Button label="Sign out" variant="secondary" onPress={signOut} />
       </Screen>

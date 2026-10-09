@@ -1,0 +1,99 @@
+# Continuous integration for every push and pull request (PRD 9.4, milestone 1).
+#
+# Security choices:
+# - The workflow's GitHub token can only read the repository (least privilege).
+# - Every action is pinned to an exact commit, so a moved or hijacked tag
+#   cannot change what runs here. Dependabot keeps the pins up to date.
+# - Checkouts do not keep the GitHub token on disk.
+# - No step prints environment variables or secrets (Appendix A #11). This
+#   workflow uses no repository secrets at all. The local Supabase stack's
+#   throwaway keys are filtered out of the start-up output.
+# - Nothing is uploaded as an artifact, so build caches and logs (such as
+#   Expo's .expo folder) never leave the runner.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    # bash with pipefail, so a failing command in a pipe fails the step.
+    shell: bash
+
+jobs:
+  secrets:
+    name: Secret scan (whole history)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install gitleaks 8.30.1 (checksum verified)
+        run: |
+          curl -sSfL -o gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum --check --strict
+          tar -xzf gitleaks.tar.gz gitleaks
+      - name: Scan every commit (Appendix A #13)
+        run: ./gitleaks git --redact --no-banner --verbose --config .gitleaks.toml .
+
+  checks:
+    name: Dependencies, lint, types, design, unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: npm audit, high and critical (Appendix A #37)
+        run: npm run audit:check
+      - name: Edge Function dependencies in step with the app, and audited
+        run: npm run audit:functions
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Design check (Appendix B)
+        run: npm run design:check
+      - run: npm run test:unit
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.7
+      - name: Edge Function types (Deno)
+        run: npm run typecheck:functions
+
+  database:
+    name: Database and two-user isolation tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Start the local Supabase stack and apply every migration from scratch
+        run: npx supabase start -x vector,logflare,imgproxy,studio 2>&1 | { grep -viE 'key|secret|token|jwt|password|postgres(ql)?://' || true; }
+      - name: Database tests (RLS on every table, exact grants)
+        run: npm run test:db
+      - name: Integration tests (milestone 1 acceptance)
+        run: npm run test:integration
+      - name: Stop the stack
+        if: always()
+        run: npx supabase stop --no-backup > /dev/null 2>&1 || true

@@ -18,7 +18,7 @@ export function contrast(a: string, b: string): number {
 
 type Key = Exclude<keyof ColourScheme, 'avatarTones'>;
 
-const textOn: Array<[Key, Key]> = [];
+const textOn: [Key, Key][] = [];
 for (const bg of ['background', 'surface', 'surfacePressed'] as const) {
   for (const fg of ['textPrimary', 'textSecondary', 'accentText', 'up', 'down', 'danger'] as const) {
     textOn.push([fg, bg]);
