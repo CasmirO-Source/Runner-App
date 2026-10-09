@@ -48,8 +48,10 @@ The email shows the code only. There is no link, so there is nothing to phish wi
 
 ## Authentication > Rate limits
 
-- [ ] Sign-ups and sign-ins: **2 per 5 minutes per IP** (at most 24 an hour; the PRD asks for 20 an hour and Supabase counts in 5-minute steps).
+- [ ] Sign-ups and sign-ins: **2 per 5 minutes per IP**.
 - [ ] Token verifications: **10 per 5 minutes per IP**.
+
+How Supabase applies these: each is a bucket that holds about 30 requests and refills at the configured rate. So one network can send up to 30 requests at once, then 2 (or 10) per 5 minutes. The burst size cannot be changed. Against PRD 9.3 (20 code requests per hour per IP), the steady rate is 24 an hour after a first burst of 30. Measured on the dev project on 9 October 2026: refused at request 24 (code requests) and 20 (verifications) from a network that had already used part of its allowance.
 - [ ] Token refreshes: leave at the default (150 per 5 minutes per IP).
 
 ## Authentication > Sessions

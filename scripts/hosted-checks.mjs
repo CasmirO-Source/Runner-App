@@ -13,8 +13,12 @@
 //
 //   node --env-file=.env scripts/hosted-checks.mjs
 //
-// Afterwards, wait 5 minutes before asking for another sign-in code from this
-// network: the per-IP check deliberately uses up the allowance.
+// Afterwards, sign-in requests from this network may be refused for a few
+// minutes: the per-IP checks deliberately empty the allowance.
+//
+// Supabase's per-IP limits are token buckets that hold about 30 requests,
+// whatever rate is configured; the configured rate is how fast the bucket
+// refills. So the checks keep sending until refused, up to 35 requests.
 import { createInterface } from 'node:readline/promises';
 
 import { createClient } from '@supabase/supabase-js';
@@ -183,19 +187,32 @@ if (token) {
   if (sawBefore === 0) console.log('info  no profiles exist yet on this project, so the REST sign-out check proves less than it could.');
 }
 
-// 3. Per-IP limit on code requests (run last: it uses up this network's allowance)
-console.log('\nPer-IP sign-in limit (2 requests per 5 minutes)');
-// Made-up addresses with create_user false: nothing is created and no email
-// is sent, so only the per-IP limit can refuse these. It is recognised by its
-// own error code, so an email limit cannot make this check pass by accident.
-const results = [];
-for (let i = 0; i < 3; i++) {
-  const res = await call('/auth/v1/otp', { method: 'POST', body: { email: `ip-limit-check-${Date.now()}-${i}@example.com`, create_user: false } });
-  const code = res.status === 429 ? (await json(res))?.error_code : null;
-  results.push(`${res.status}${code ? ` ${code}` : ''}`);
-  if (code === 'over_request_rate_limit') break;
+// 3. Per-IP limits (run last: they empty this network's allowance).
+// Made-up addresses and wrong codes: nothing is created and no email is sent,
+// so only the per-IP limiter can refuse these. It is recognised by its own
+// error code, so no other limit can make these checks pass by accident.
+async function untilRefused(label, makeRequest) {
+  const seen = {};
+  for (let i = 1; i <= 35; i++) {
+    const res = await makeRequest(i);
+    const code = (await json(res))?.error_code ?? '';
+    if (res.status === 429 && code === 'over_request_rate_limit') {
+      check(`${label} are refused once this network's allowance is used up`, true, `refused at request ${i}; before that ${JSON.stringify(seen)}`);
+      return;
+    }
+    seen[`${res.status} ${code}`] = (seen[`${res.status} ${code}`] ?? 0) + 1;
+  }
+  check(`${label} are refused once this network's allowance is used up`, false, `no per-IP refusal within 35 requests: ${JSON.stringify(seen)}`);
 }
-check('sign-in requests from one IP are refused once the limit is reached', results.some((x) => x.includes('over_request_rate_limit')), results.join(', '));
+
+console.log('\nPer-IP limits (buckets of about 30, refilled at 2 and 10 per 5 minutes)');
+const run = Date.now();
+await untilRefused('sign-in code requests', (i) =>
+  call('/auth/v1/otp', { method: 'POST', body: { email: `ip-limit-check-${run}-${i}@example.com`, create_user: false } }),
+);
+await untilRefused('code guesses', (i) =>
+  call('/auth/v1/verify', { method: 'POST', body: { type: 'email', email: `ip-limit-check-${run}@example.com`, token: String(100000 + i) } }),
+);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
