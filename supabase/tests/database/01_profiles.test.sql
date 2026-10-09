@@ -3,12 +3,21 @@
 -- by 00_security_baseline and the integration tests.
 begin;
 create extension if not exists pgtap with schema extensions;
+-- Run as postgres (the hosted CLI logs in with a separate role that cannot
+-- use the extensions schema), and look for pgTAP in the extensions schema.
+set local role postgres;
+set local search_path = extensions, public;
 select no_plan();
 
 insert into auth.users (id, email, aud, role) values
   ('11111111-1111-4111-8111-111111111111', 'a@example.com', 'authenticated', 'authenticated'),
   ('22222222-2222-4222-8222-222222222222', 'b@example.com', 'authenticated', 'authenticated'),
   ('33333333-3333-4333-8333-333333333333', 'c@example.com', 'authenticated', 'authenticated');
+
+-- Live sessions for A and B (as Supabase Auth creates on sign-in).
+insert into auth.sessions (id, user_id, created_at, updated_at) values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '11111111-1111-4111-8111-111111111111', now(), now()),
+  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '22222222-2222-4222-8222-222222222222', now(), now());
 
 insert into public.profiles (id, display_name, avatar_id, home_city, over_18) values
   ('11111111-1111-4111-8111-111111111111', 'Sam Smith', 1, 'Leeds', true),
@@ -77,12 +86,27 @@ select ok(
 );
 
 -- get_my_profile returns only the caller's row, chosen by the token
-select set_config('request.jwt.claims', '{"sub":"11111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-4111-8111-111111111111","role":"authenticated","session_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}', true);
 select results_eq($$ select id::text, home_city from public.get_my_profile() $$,
   $$ values ('11111111-1111-4111-8111-111111111111', 'Leeds') $$, 'user A gets only their own profile, with private fields');
-select set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","session_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}', true);
 select results_eq($$ select id::text from public.get_my_profile() $$,
   $$ values ('22222222-2222-4222-8222-222222222222') $$, 'user B gets only their own profile');
+
+-- Session checks (migration 4)
+select ok(private.session_is_active(), 'a live session counts as active');
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","session_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}', true);
+select ok(not private.session_is_active(), 'someone else''s session ID does not count');
+select is_empty($$ select * from public.get_my_profile() $$, 'a token naming another user''s session gets nothing');
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated"}', true);
+select ok(not private.session_is_active(), 'a token with no session ID does not count');
+update auth.sessions set not_after = now() - interval '1 minute' where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","session_id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}', true);
+select ok(not private.session_is_active(), 'a session past its end time does not count');
+update auth.sessions set not_after = null where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+delete from auth.sessions where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-4111-8111-111111111111","role":"authenticated","session_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}', true);
+select is_empty($$ select * from public.get_my_profile() $$, 'after sign-out (session deleted) get_my_profile returns nothing');
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 select is_empty($$ select * from public.get_my_profile() $$, 'no token subject means no rows');
 

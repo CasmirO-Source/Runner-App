@@ -2,6 +2,10 @@
 -- hashing and the cleanup job's statement.
 begin;
 create extension if not exists pgtap with schema extensions;
+-- Run as postgres (the hosted CLI logs in with a separate role that cannot
+-- use the extensions schema), and look for pgTAP in the extensions schema.
+set local role postgres;
+set local search_path = extensions, public;
 select no_plan();
 
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);

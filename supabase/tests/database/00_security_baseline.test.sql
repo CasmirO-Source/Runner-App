@@ -4,6 +4,10 @@
 -- lists below must be updated on purpose, in the same change.
 begin;
 create extension if not exists pgtap with schema extensions;
+-- Run as postgres (the hosted CLI logs in with a separate role that cannot
+-- use the extensions schema), and look for pgTAP in the extensions schema.
+set local role postgres;
+set local search_path = extensions, public;
 select no_plan();
 
 -- 1. Row-level security on every table we create, in any schema. Our tables
@@ -112,7 +116,8 @@ select set_eq(
   array[
     'public.get_my_profile authenticated',
     'public.consume_rate_limit service_role',
-    'private.display_name_is_clean service_role'
+    'private.display_name_is_clean service_role',
+    'private.session_is_active authenticated'
   ],
   'functions are runnable only by the roles that need them'
 );
@@ -130,11 +135,18 @@ select is_empty(
 
 -- 7. Every function has a fixed, empty search_path, so it cannot be tricked
 -- into using objects a caller created.
+--
+-- One Supabase-supplied function exists only on hosted projects:
+-- public.rls_auto_enable, behind the "enable RLS on new tables" project
+-- setting. It is an event trigger function that no API role can run (checked
+-- in section 6), pins its search_path to pg_catalog and quotes every name. It
+-- is checked separately below rather than loosening these rules.
 select is_empty(
   $$
     select n.nspname || '.' || p.proname
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname in ('public', 'private')
+      and not (n.nspname = 'public' and p.proname = 'rls_auto_enable')
       and not coalesce(p.proconfig @> array['search_path=""'], false)
   $$,
   'every function sets an empty search_path'
@@ -145,9 +157,42 @@ select set_eq(
     select n.nspname || '.' || p.proname
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname in ('public', 'private') and p.prosecdef
+      and not (n.nspname = 'public' and p.proname = 'rls_auto_enable')
   $$,
-  array['public.get_my_profile', 'public.consume_rate_limit'],
-  'only the two reviewed functions run with raised privileges'
+  array['public.get_my_profile', 'public.consume_rate_limit', 'private.session_is_active'],
+  'only the three reviewed functions run with raised privileges'
+);
+
+-- Every rule for signed-in users requires a live session, so a token from a
+-- signed-out session gets nothing (migration 4).
+select is_empty(
+  $$
+    select schemaname || '.' || tablename || ' ' || policyname
+    from pg_policies
+    where 'authenticated' = any (roles)
+      and coalesce(qual, '') || coalesce(with_check, '') not like '%session_is_active()%'
+  $$,
+  'every policy for signed-in users checks the session is still active'
+);
+select isnt_empty(
+  $$ select 1 from pg_proc where proname = 'get_my_profile' and prosrc like '%session_is_active()%' $$,
+  'get_my_profile checks the session is still active'
+);
+
+select is_empty(
+  $$
+    select p.proname
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'rls_auto_enable'
+      and not (
+        pg_get_function_result(p.oid) = 'event_trigger'
+        and p.proconfig @> array['search_path=pg_catalog']
+        and not has_function_privilege('anon', p.oid, 'execute')
+        and not has_function_privilege('authenticated', p.oid, 'execute')
+        and not has_function_privilege('service_role', p.oid, 'execute')
+      )
+  $$,
+  'Supabase''s rls_auto_enable (hosted only) is an event trigger with a pinned search_path that no API role can run'
 );
 
 -- 8. The private schema is closed to app users.
@@ -168,7 +213,10 @@ select ok(not has_table_privilege('service_role', 'private.zz_probe', 'select'),
 select ok(not has_function_privilege('anon', 'public.zz_probe_fn()', 'execute'), 'new function: anon cannot run it');
 select ok(not has_function_privilege('authenticated', 'public.zz_probe_fn()', 'execute'), 'new function: authenticated cannot run it');
 
--- The RLS check above would catch a table created without RLS.
+-- The RLS check above would catch a table created without RLS. (Hosted
+-- projects switch RLS on automatically for new public tables, so switch it
+-- off to prove the check itself works.)
+alter table public.zz_probe disable row level security;
 select isnt_empty(
   $$
     select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace

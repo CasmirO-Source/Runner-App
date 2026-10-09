@@ -16,7 +16,8 @@
     "test:integration": "node scripts/test-integration.mjs",
     "lint": "eslint . --max-warnings 0",
     "design:check": "node scripts/design-check.mjs",
-    "audit:functions": "node scripts/function-deps.mjs"
+    "audit:functions": "node scripts/function-deps.mjs",
+    "check:hosted": "node --env-file=.env scripts/hosted-checks.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/barlow-condensed": "^0.4.1",

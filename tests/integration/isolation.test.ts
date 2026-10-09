@@ -216,6 +216,30 @@ describe('Forged and missing tokens', () => {
   });
 });
 
+describe('A signed-out token stops working on the REST API at once (migration 4)', () => {
+  test('profile reads return nothing after sign-out', async () => {
+    const E = await createUser('iso-e');
+    try {
+      const created = await callProfile(E.token, { action: 'create', display_name: testName('Leaver'), avatar_id: 4, over_18: true });
+      assert.equal(created.status, 201);
+      const before = await api('/rest/v1/rpc/get_my_profile', { token: E.token, method: 'POST', body: {} });
+      assert.equal(before.json.length, 1, 'own profile visible while signed in');
+      const list = await api('/rest/v1/profiles?select=id&limit=1', { token: E.token });
+      assert.equal(list.json.length, 1, 'public fields visible while signed in');
+
+      const out = await api('/auth/v1/logout?scope=local', { method: 'POST', token: E.token });
+      assert.equal(out.status, 204);
+
+      const after = await api('/rest/v1/rpc/get_my_profile', { token: E.token, method: 'POST', body: {} });
+      assert.ok(after.status !== 200 || after.json.length === 0, 'own profile no longer readable');
+      const listAfter = await api(`/rest/v1/profiles?select=id,display_name&id=eq.${B.id}`, { token: E.token });
+      assert.ok(listAfter.status !== 200 || listAfter.json.length === 0, "others' public fields no longer readable");
+    } finally {
+      await deleteUsers([E]);
+    }
+  });
+});
+
 describe('Other routes are closed', () => {
   test('GraphQL is not available', async () => {
     const r = await api('/graphql/v1', { token: A.token, method: 'POST', body: { query: '{ __typename }' } });
