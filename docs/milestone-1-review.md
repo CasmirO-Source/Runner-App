@@ -94,18 +94,18 @@ Status key: **Met**; **Met, platform limit** (met as far as Supabase allows, own
 | 23 | SSRF | Met | The Edge Function only contacts the Supabase URL from its environment. No user-supplied addresses are fetched. |
 | 24 | Broken password reset | Met | No passwords in the app. The password route Supabase cannot switch off requires a confirmed email and strong passwords (tested). Email changes need confirmation at the old address. |
 | 25 | Weak session management | Met | 1-hour access tokens (hosted check), refresh token rotation, tokens in the Keychain or Keystore and never restored to another phone, sign-out ends the session on the server. Migration 4 makes the REST API refuse signed-out tokens at once (local and hosted tests). |
-| 26 | Weak JWT secrets | Open | Confirm the dev project uses Supabase's generated asymmetric signing keys (owner, dashboard). |
+| 26 | Weak JWT secrets | Met | Owner confirmed on 10 October 2026: Supabase-managed signing keys, never a hand-typed secret. Production gets its own keys in milestone 9. |
 | 27 | Overly permissive CORS | Met, platform limit | Our Edge Function sends no CORS header (hosted check). Supabase's gateway adds `*` to its own refusals of requests without a token (owner accepted: no data in those replies). The REST API echoes any website's origin; this is Supabase platform behaviour and cannot be configured. Low risk because tokens are never in cookies (#20). |
 | 28 | Missing rate limits | Met, platform limit | Edge Functions: 60 per minute per IP and per user, 20 profile edits per hour, HTTP 429 with Retry-After (tested). Auth: 2 code requests and 10 verifications per 5 minutes per IP, but Supabase lets a burst of up to 30 through first and the burst cannot be changed (measured on the hosted project). One email per address per 12 minutes. AI spending cap: milestone 4. |
 | 29 | Public test environments | Met | The dev project holds only the owner's own test account. Resend's test sender only delivers to the owner's address, so nobody else can complete sign-in. |
-| 30 | Default credentials | Open | Owner to confirm the database password came from a password manager. No production or demo accounts exist. |
+| 30 | Default credentials | Met | Owner confirmed on 10 October 2026 that the database password is secure. No production or demo accounts exist. |
 | 31 | Webhooks without verification | Not yet | Milestone 8. |
 | 32 | Payment checks in the app | Not yet | Milestone 8. |
 | 33 | IDOR | Met | All IDs are random UUIDs; every request is checked against the signed-in user on the server. |
 | 34 | Trusting user-controlled IDs | Met | User ID only ever comes from the verified token (tested with three field names). |
 | 35 | Logs with private data | Met for our code | Edge Function logs accept only an allow-listed set of fields (function, reference, error type, database error code). Verified: no names, emails, tokens or IPs in logs. Sentry scrubbing: when Sentry is added. |
 | 36 | Source maps exposed | Met | Exports contain no source maps. Private upload to Sentry comes with Sentry. |
-| 37 | Dependency vulnerabilities | Met, with dated exceptions | CI fails on high or critical. Two accepted (no fix exists, build tools only, review by 9 November 2026). Dependabot configured; Dependabot alerts in GitHub settings still to switch on (open). |
+| 37 | Dependency vulnerabilities | Met, with dated exceptions | CI fails on high or critical. Two accepted (no fix exists, build tools only, review by 9 November 2026). Dependabot configured, and Dependabot alerts are on in GitHub (checked through the GitHub API on 10 October 2026). |
 | 38 | Outdated packages | Met | Expo SDK 57 (latest). Dependabot monthly; Edge Function packages kept equal to the app's. |
 | 39 | Prompt injection | Not yet | Milestone 4. |
 | 40 | AI acting without permission | Not yet | Milestone 4. |
@@ -113,7 +113,7 @@ Status key: **Met**; **Met, platform limit** (met as far as Supabase allows, own
 | 42 | No audit logs | Not yet | No sensitive actions exist yet; `audit_log` arrives with the first one (milestone 2, league removal). |
 | 43 | No monitoring | Open | Sentry and spend alerts are not set up. Needed before the friends test (after milestone 6). |
 | 44 | No backup plan | Not yet, note | Required before any external user joins. The free plan has no daily backups, so this needs a plan upgrade or another backup route before the friends test. |
-| 45 | Public dashboards | Open | Owner to confirm two-factor login on Supabase, GitHub, Expo, Resend and Apple accounts. |
+| 45 | Public dashboards | Met | Owner confirmed on 10 October 2026: two-factor login on every developer account. No dashboard is shared by public link. |
 | 46 | Missing security headers | Met | Edge Function replies set JSON content type, `nosniff` and `no-store` (local and hosted). No web pages exist. |
 | 47 | Cookie flags | Not applicable | No cookies. |
 | 48 | Unencrypted sensitive data | Met | HTTPS to Supabase; tokens in secure storage; date of birth checked on the phone and never sent or stored. |
@@ -123,7 +123,7 @@ Status key: **Met**; **Met, platform limit** (met as far as Supabase allows, own
 
 Enforcement in code: all colours, fonts, spacing, radii and line widths live in `src/theme/tokens.ts`. `scripts/design-check.mjs` fails CI on em dashes anywhere, gradients, blur or glass, Inter, Space Grotesk, Instrument Serif, Lucide, italics, serif fonts, emojis, raw colours or spacing outside the tokens file, and fade-only press effects.
 
-Visual check: the owner reports screenshots of every new screen in light and dark mode (sign-in, code entry and error state, onboarding steps 1 to 3, home, "Sorry, not yet"). Claude has reviewed only the avatar screen in light mode. The owner checks the rest against this table, or shares them for review.
+Visual check: the owner reports screenshots of every new screen in light and dark mode (sign-in, code entry and error state, onboarding steps 1 to 3, home, "Sorry, not yet"). Claude reviewed only the avatar screen in light mode; the owner checked the rest against this table and approved them on 10 October 2026.
 
 | # | Banned | Status | How |
 |---|---|---|---|
@@ -135,7 +135,7 @@ Visual check: the owner reports screenshots of every new screen in light and dar
 | 6 | Glassmorphism | Met | Solid surfaces only (design check bans blur). |
 | 7 | Low-contrast dark mode | Met | 46 colour pairs tested against WCAG AA in both modes. |
 | 8 | Rows of three icon boxes | Met | One idea per onboarding screen; avatars four to a row. |
-| 9 | Small badges above headlines | Owner to judge | No pill labels exist. The onboarding screens show plain "Step 1 of 3" text above the title, with no background or border. Remove it if it reads as a badge. |
+| 9 | Small badges above headlines | Met (owner decision) | No pill labels exist. The plain "Step 1 of 3" text above onboarding titles, with no background or border, was approved by the owner as designed. |
 | 10 | Lucide icons | Met | No icon library used. |
 | 11 | Unstyled component libraries | Met | Own components built from tokens. |
 | 12 | Fade-in on scroll | Met | Content appears immediately. |
@@ -186,17 +186,18 @@ Visual check: the owner reports screenshots of every new screen in light and dar
 | Email | Custom SMTP through Resend; code-only templates | Owner |
 | Supabase's `rls_auto_enable` | Hosted-only platform function, checked explicitly in tests | Plan |
 | Install scripts | `unrs-resolver` install script denied | Plan |
+| "Step X of 3" onboarding label | Kept as plain text above titles | Owner |
 | Node versions | CI on Node 24 (LTS); local Node 26 | Plan |
 
 ## 8. Open items for the owner
 
 Before approving milestone 1:
 
-- [ ] Look over the screenshots against section 5 (or share them for review), including the "Step 1 of 3" label (#9).
-- [ ] GitHub: switch on Dependabot alerts and security updates (`docs/github-settings.md`). Branch protection needs a paid GitHub plan.
-- [ ] Two-factor login on Supabase, GitHub, Expo, Resend and Apple accounts (A45).
-- [ ] Confirm the dev project uses Supabase's generated asymmetric JWT signing keys (A26).
-- [ ] Confirm the database password came from a password manager (A30).
+- [x] Screenshots checked against section 5; "Step 1 of 3" label approved as designed (#9).
+- [x] GitHub: Dependabot alerts on. Branch protection needs a paid GitHub plan (not set).
+- [x] Two-factor login on every developer account (A45).
+- [x] Supabase-managed JWT signing keys (A26).
+- [x] Database password secure (A30).
 
 Before the friends test (after milestone 6):
 
