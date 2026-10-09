@@ -54,6 +54,10 @@ The email shows the code only. There is no link, so there is nothing to phish wi
 
 - [ ] The app's `.env` holds the publishable (or legacy anon) key only. The secret and service role keys are never copied anywhere: Edge Functions receive them automatically.
 
+## Realtime > Settings
+
+- [ ] Allow public access: **off**. With it on, any two people using the app (or anyone holding the public key) can send each other messages through public Realtime channels, with no table, grant or row-level security involved. Chat between users is out of scope (PRD section 3). With it off, only private channels work, and those need row-level security rules on `realtime.messages`, of which there are none, so nothing is allowed. The local stack resets this setting on every start, so it is checked against the hosted project instead.
+
 ## Project settings > Data API
 
 - [ ] Exposed schemas: `public` only. Remove `graphql_public`.

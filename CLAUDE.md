@@ -28,6 +28,21 @@ Update this table when the owner approves a milestone as done.
 - Only create the database tables the current milestone needs.
 - Appendices A, B and C apply to every milestone. Before saying a milestone is done: run all tests, list every item in A, B and C that applies to what the milestone built, and say how each one is met.
 
+## Running the checks
+
+Needs Docker Desktop running and the local stack started (`npx supabase start`).
+
+| Command | What it checks |
+|---|---|
+| `npm run typecheck` | App and test code types |
+| `npm run typecheck:functions` | Edge Functions, with Deno |
+| `npm run test:unit` | Pure logic: env guard, secure storage, contrast, age check, validation |
+| `npm run test:db` | pgTAP: RLS on every table, exact grants, function permissions, constraints, rate limiter |
+| `npm run test:integration` | Real API calls as two users against the local stack (the milestone 1 acceptance test) |
+| `npm run audit:check` | npm audit, with dated exceptions in `audit-exceptions.json` |
+
+When a migration adds a table, function or grant, update the expected lists in `supabase/tests/database/00_security_baseline.test.sql` in the same change. That test failing is the point: it makes every new permission a deliberate decision.
+
 ## Supabase rules
 
 - Development project: London (`eu-west-2`). Never public, never holds real user data. Production project is created only in M9, from the same migrations.
