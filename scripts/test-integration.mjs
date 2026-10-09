@@ -78,7 +78,9 @@ const stopServer = () => {
 let code = 1;
 try {
   await waitForFunctions();
-  const files = process.argv.slice(2).length ? process.argv.slice(2) : ['tests/integration/'];
+  // A file pattern rather than a folder: Node 24 (used in CI) does not accept a
+  // folder here, Node 26 does.
+  const files = process.argv.slice(2).length ? process.argv.slice(2) : ['tests/integration/**/*.test.ts'];
   const run = spawn(process.execPath, ['--test', '--test-concurrency=1', ...files], { env: testEnv, stdio: 'inherit' });
   code = await new Promise((resolve) => run.on('exit', (c) => resolve(c ?? 1)));
 } catch (error) {
