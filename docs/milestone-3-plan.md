@@ -28,3 +28,5 @@ Steps 1 to 3 work in Expo Go.
 | 8 | Duplicates | A manual run overlapping an existing run is rejected; a Health run overlapping an earlier manual run replaces it (recorded) |
 | 9 | Several accounts on one device | Milestone 9, with a privacy check |
 | 10 | Withdrawing health consent | Syncing stops at once; runs already synced are kept; account deletion (milestone 9) removes everything |
+| 11 | Whole-month counting | Runs from the whole season count in a league, including before the runner joined (Claude's choice in step 2, open to the owner overruling) |
+| 12 | History import (PRD 1.1) | Verified Health runs up to 120 days old are accepted, so placement, Stride and analytics work from day one; typed-in runs stay at 7 days. Built into `record_run` in step 2; the import itself is part of step 5 |

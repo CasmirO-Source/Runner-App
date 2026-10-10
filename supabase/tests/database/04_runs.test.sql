@@ -85,6 +85,12 @@ select results_eq($$ select status, reasons from pg_temp.manual('R1', now() + in
   $$ values ('flagged', array['in_future']) $$, 'a run in the future is flagged');
 select results_eq($$ select status, reasons from pg_temp.manual('R1', now() - interval '8 days', 5000, 1500) $$,
   $$ values ('flagged', array['too_old']) $$, 'a run more than 7 days ago is flagged');
+select results_eq($$ select status, reasons from pg_temp.health('R4', now() - interval '100 days', 5000, 1500, 'history-1') $$,
+  $$ values ('accepted', '{}'::text[]) $$, 'a verified Health run from 100 days ago is accepted (history import)');
+select results_eq($$ select status, reasons from pg_temp.health('R4', now() - interval '121 days', 5000, 1500, 'history-2') $$,
+  $$ values ('flagged', array['too_old']) $$, 'a Health run more than 120 days ago is flagged');
+select results_eq($$ select status, reasons from pg_temp.manual('R4', now() - interval '100 days' + interval '2 hours', 5000, 1500) $$,
+  $$ values ('flagged', array['too_old']) $$, 'a typed-in run from 100 days ago is still flagged');
 
 -- Daily total: 150 km per UK calendar day.
 select results_eq($$ select status from pg_temp.manual('R2', pg_temp.uk(4, 0, 10), 50000, 14400) $$, $$ values ('accepted') $$, 'day total 50 km');

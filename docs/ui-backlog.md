@@ -38,6 +38,23 @@ Ideas and feedback for the app's layout and look. Navigation structure is built 
 
 - Accent colour: the owner considered forest green instead of signal orange (10 October 2026) and chose to keep orange for now and revisit here. A contrast-checked green set exists (light `#1F5C3A` with off-white button text; dark `#4CAF73` with near-black text, `#5DBB82` for green text), with the accent green doubling as "up". Switching needs PRD 13.1 and Appendix B #1 amended, then one tokens edit.
 
+### Chess-inspired ideas (owner, 10 October 2026)
+
+Adopted into PRD version 1.1:
+
+- Duel lengths named **Sprint** (3 days), **Tempo** (7 days) and **Endurance** (14 days). Milestone 6.
+- Duel record and head-to-head stats between friends, free. Milestone 6.
+- Run review per run, pace accuracy, and head-to-head run styles (opt-in, off by default) for Pro. Milestone 7.
+- History import of verified Health runs from the last 120 days. Milestone 3, step 5.
+
+Not adopted, with reasons:
+
+- "Chess.com" in the name or listing: another company's brand (Appendix C #5). Inspiration only.
+- Chess time-control names: owner chose running names instead.
+- Micro-games inside a run feeding the rating: would make Stride gameable; the useful part lives in the run review.
+- Cadence and heart-rate scoring: many runners do not record them, so it would be unfair.
+- A 24-hour duel and a duel rating: future versions (PRD 15).
+
 ### Not now, and why
 
 - **Matchmaking against strangers (the Arena):** out of scope for version 1 (PRD section 3; planned for version 2 in section 15). No tile or "coming soon" entry: out-of-scope items are not built, even partially.

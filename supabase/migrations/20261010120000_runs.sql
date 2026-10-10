@@ -134,6 +134,7 @@ declare
   v_overlap record;
   v_health_overlap boolean := false;
   v_manual_overlaps uuid[] := '{}';
+  v_max_age interval;
 begin
   perform private.require_server();
 
@@ -194,9 +195,14 @@ begin
      or p_duration_s::numeric * 1000 > 900::numeric * p_distance_m then
     v_reasons := array_append(v_reasons, 'pace_out_of_range');
   end if;
+  -- Typed-in runs: up to 7 days old. Verified Health runs: up to 120 days, so
+  -- a new runner's history counts for Stride and analytics from day one (PRD
+  -- 1.1, sections 6.2 and 6.4). Leagues and duels only count runs inside
+  -- their own dates, so old runs cannot change a competition.
+  v_max_age := case when p_source = 'health' then interval '120 days' else interval '7 days' end;
   if p_started_at > now() then
     v_reasons := array_append(v_reasons, 'in_future');
-  elsif p_started_at < now() - interval '7 days' then
+  elsif p_started_at < now() - v_max_age then
     v_reasons := array_append(v_reasons, 'too_old');
   end if;
   -- Daily total, per calendar day in UK time, counting runs that still count.

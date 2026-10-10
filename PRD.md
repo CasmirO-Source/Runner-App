@@ -1,7 +1,9 @@
 # Product Requirements Document: [APP NAME] (working title)
 
-Version 1.0, 9 October 2026
+Version 1.1, 10 October 2026
 Owner: Cas
+
+Changes in 1.1 (owner decisions, 10 October 2026): duel lengths named Sprint, Tempo and Endurance; duel record and head-to-head stats (5.3); run review, pace accuracy and head-to-head run styles for Pro (5.6); verified Health runs accepted up to 120 days old so a runner's history counts from day one (6.2, 6.4); milestones 6 and 7 updated to match; new future ideas (15).
 
 ---
 
@@ -131,15 +133,16 @@ Reference points: a 25 minute 5 km runner doing 15 km a week scores about 920 (P
 
 ### 5.3 1v1 duels
 - Challenge any friend you share a league with, or invite someone by link.
-- Length: 3, 7 or 14 days, starting at midnight (Europe/London time) after the challenge is accepted.
+- Length: **Sprint** (3 days), **Tempo** (7 days) or **Endurance** (14 days), starting at midnight (Europe/London time) after the challenge is accepted.
 - Two modes:
   - **Straight duel:** most distance wins. Runs from any source count unless the challenger sets "verified only".
   - **Handicap duel:** for friends at different levels. Each runner's score is their distance as a percentage of their own baseline, so a beginner who doubles their usual distance beats an experienced runner who only matches theirs. Verified runs only, and both runners must be placed (section 4.4).
 - **Baseline:** the higher of the runner's average weekly verified distance over the last 4 weeks and over the last 12 weeks, scaled to the duel length, minimum 5 km per week. Fixed when the duel starts. Using the higher average stops people running less for a few weeks to lower their baseline before a duel.
 - The challenged friend has 24 hours to accept or decline. One active duel per pair of friends.
 - Live head-to-head screen: both totals (or percentages), the gap and time left.
-- Ties go to whoever reached the final total first.
-- Head-to-head record for every pair (for example "Cas leads Jordan 4 to 2"), shown on both profiles.
+- Ties go to whoever reached the final total first, so there are no draws.
+- **Head-to-head stats** for every pair, free and shown to both runners: the record ("Cas leads Jordan 4 to 2"), current streak, last five results, record by duel length, and the biggest winning margin. Built only from duel results, which both runners can already see.
+- **Duel record**, free: overall wins, losses and win rate, by duel length, with current and best winning streaks. On the You and Activity tabs.
 - Duel results do not change Stride. Stride measures ability; duels are bragging rights.
 - Blocked users cannot challenge you. No prizes, no money.
 
@@ -183,6 +186,12 @@ Inspired by chess.com's game review and coaching apps such as Runna: turn a runn
 
 **9. Heart rate (if the runner's watch records it).** Average and maximum heart rate per run and an easy-run check ("Your easy runs are too hard: heart rate was in the top zone for 60% of the run"). Optional permission.
 
+**10. Run review.** For each verified run with splits, a short review in the spirit of a chess game review: the first kilometre, the middle and the finish, each with a plain verdict (for example "Went out 12 seconds per km faster than your average, then faded over the last 2 km").
+
+**11. Pace accuracy.** A percentage for how evenly a run was paced, or, when a goal is set (item 6), how closely it held the goal pace. Worked out by rules from how far each kilometre strayed from the target, and shown with the splits it is based on.
+
+**12. Head-to-head run styles.** On a friend's head-to-head screen, compare how you each run: pacing habit, average pace, consistency and favourite days (for example "Jordan starts fast and fades; you finish strong"). The friend's side appears only if they have switched on "Share my run style with friends" (off by default), and only as labels and percentages, never their splits or heart rate.
+
 **Rules for all Pro advice:**
 - Never medical advice. No diagnosis, no injury treatment, no weight-loss targets.
 - Every insight shows what data it is based on and how many runs.
@@ -210,6 +219,7 @@ Inspired by chess.com's game review and coaching apps such as Runna: turn a runn
 - Read running workouts only: start time, duration, distance, and distance samples during the run (to work out pace for each kilometre). Heart rate is a separate, optional permission used only for Pro. Request the minimum permissions.
 - Store per-kilometre splits (time for each kilometre) in `run_splits`. Never read or store GPS routes or location.
 - Exclude workouts entered manually in Health (on iPhone, check the "was user entered" metadata flag).
+- On the first sync, import verified running workouts from the last 120 days, so placement, Stride and analytics work from day one instead of after weeks of new runs.
 - Sync on app open and in the background where the platform allows.
 
 ### 6.3 Screenshot reader
@@ -219,7 +229,7 @@ Inspired by chess.com's game review and coaching apps such as Runna: turn a runn
 - Manual entry is always available if the AI is unavailable. The app must never depend on the AI to function.
 
 ### 6.4 Run validation (server-side, every source)
-- Distance 0.5 km to 100 km. Pace 2:30 to 15:00 per km. Date not in the future and no more than 7 days ago.
+- Distance 0.5 km to 100 km. Pace 2:30 to 15:00 per km. Date not in the future. Typed-in and screenshot runs: no more than 7 days ago. Verified Health runs: no more than 120 days ago (history import, section 6.2). Leagues and duels only ever count runs inside their own dates, so old runs cannot change a competition.
 - Daily total no more than 150 km.
 - Reject duplicates: overlapping time ranges for the same user across sources.
 - Reject reused screenshots: store a perceptual hash (a fingerprint that matches visually identical images) and block repeats.
@@ -469,12 +479,12 @@ Calculation, placement, tiers, slow-fall rule, history chart.
 *Accept:* unit tests cover the formula, the 150-point weekly fall cap, the 60 and 120 day windows and placement; sandbagging runs do not lower Stride.
 
 **M6. 1v1 duels and notifications**
-Challenge, accept, decline, straight and handicap modes, baselines, live head-to-head, results, rivalry records, notification limits and quiet hours.
-*Accept:* tests cover baseline calculation (including the higher-of-two-averages rule), handicap scoring, ties, expiry of unanswered challenges, the one-duel-per-pair rule, and that only the two runners can see a duel. The friends test starts after this milestone.
+Challenge, accept, decline, Sprint, Tempo and Endurance lengths, straight and handicap modes, baselines, live head-to-head, results, duel record and head-to-head stats, notification limits and quiet hours.
+*Accept:* tests cover baseline calculation (including the higher-of-two-averages rule), handicap scoring, ties, expiry of unanswered challenges, the one-duel-per-pair rule, that head-to-head stats match the duel results, and that only the two runners can see a duel. The friends test starts after this milestone.
 
 **M7. Pro analytics**
-Per-kilometre splits, optional heart rate, pacing profile, habits, training load warning, fitness trend, race predictions, goal planner, age-graded score, monthly report card, locked preview.
-*Accept:* unit tests cover pacing classification, the 30% load warning, the 10% weekly increase cap in plans, prediction labels for half and marathon, the too-few-runs message, and the 50-runner minimum for comparisons. Advice is checked against section 12 (no medical or body advice). Splits and heart rate are visible only to their owner.
+Per-kilometre splits, optional heart rate, pacing profile, habits, training load warning, fitness trend, race predictions, goal planner, age-graded score, monthly report card, run review, pace accuracy, head-to-head run styles, locked preview.
+*Accept:* unit tests cover pacing classification, the 30% load warning, the 10% weekly increase cap in plans, prediction labels for half and marathon, the too-few-runs message, the 50-runner minimum for comparisons, run review verdicts and pace accuracy. Advice is checked against section 12 (no medical or body advice). Splits and heart rate are visible only to their owner; a friend's run style is shown only if that friend has opted in.
 
 **M8. Subscriptions**
 RevenueCat, server-side entitlements, plan limits, lapse behaviour.
@@ -488,7 +498,7 @@ Account deletion, data export, report and block, privacy policy, terms, consent,
 
 ## 15. Future versions (do not build yet)
 
-**The Arena:** public weekly lobbies of 10 runners matched within ±150 Stride (widening to ±300 if a lobby doesn't fill within 24 hours), verified runs only, with an out-of-band rule so anyone whose Stride jumps more than 150 above the lobby's range mid-week cannot win. Switch on city by city, or once a tier has enough active runners that no lobby sits empty. Then forfeits and forfeit videos, credit score, free-to-enter sponsored prize events, run clubs, pace-based lobbies, streak protection, AI-written coaching summaries, Android widget and iPhone widget.
+**The Arena:** public weekly lobbies of 10 runners matched within ±150 Stride (widening to ±300 if a lobby doesn't fill within 24 hours), verified runs only, with an out-of-band rule so anyone whose Stride jumps more than 150 above the lobby's range mid-week cannot win. Switch on city by city, or once a tier has enough active runners that no lobby sits empty. Then forfeits and forfeit videos, credit score, free-to-enter sponsored prize events, run clubs, pace-based lobbies, streak protection, AI-written coaching summaries, AI answers to running questions (needs a safety review: no medical advice), a 24-hour duel length (needs a safety review: it can push people to overdo it), a duel rating that moves with every result (alongside the Arena), Android widget and iPhone widget.
 
 ---
 
