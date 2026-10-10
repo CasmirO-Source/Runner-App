@@ -457,3 +457,9 @@ verify_jwt = true
 
 [functions.run-manual]
 verify_jwt = true
+
+[functions.screenshot-read]
+verify_jwt = true
+
+[functions.screenshot-confirm]
+verify_jwt = true

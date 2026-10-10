@@ -5,9 +5,17 @@
 //      while you test the app on a phone). Otherwise starts one, waits until it
 //      answers, and stops it again at the end.
 //   3. Runs tests/integration one file at a time.
+//   4. The screenshot reader never calls the real Claude API in tests. A
+//      function server started here gets a made-up key and the address of a
+//      fake Claude server that the screenshot tests run on this machine
+//      (FAKE_CLAUDE_PORT). The functions accept that address only on the local
+//      stack. A server that was already running has neither, so the
+//      screenshot tests are skipped, with a note.
 // Refuses to run unless the API is on this machine.
 import { execFileSync, spawn } from 'node:child_process';
-import { homedir } from 'node:os';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const PATH = `${homedir()}/.docker/bin:${process.env.PATH}`;
 
@@ -61,13 +69,24 @@ async function waitForFunctions() {
   throw new Error('Edge Functions did not start within 3 minutes.');
 }
 
+const FAKE_CLAUDE_PORT = '54398';
 let server = null;
+let envDir = null;
 if (await functionsUp()) {
-  console.log('Using the Edge Function server that is already running.');
+  console.log('Using the Edge Function server that is already running. Screenshot tests need a server started by this script, so they will be skipped.');
 } else {
-  server = spawn('npx', ['supabase', 'functions', 'serve'], { env: testEnv, stdio: 'ignore', detached: true });
+  // Placeholder values only, in a throwaway folder outside the repository.
+  envDir = mkdtempSync(join(tmpdir(), 'runner-functions-'));
+  const envFile = join(envDir, 'functions.env');
+  writeFileSync(
+    envFile,
+    `ANTHROPIC_API_KEY=local-test-key-not-real\nSCREENSHOT_READER_TEST_URL=http://host.docker.internal:${FAKE_CLAUDE_PORT}\n`,
+  );
+  testEnv.FAKE_CLAUDE_PORT = FAKE_CLAUDE_PORT;
+  server = spawn('npx', ['supabase', 'functions', 'serve', '--env-file', envFile], { env: testEnv, stdio: 'ignore', detached: true });
 }
 const stopServer = () => {
+  if (envDir) rmSync(envDir, { recursive: true, force: true });
   if (!server) return;
   try {
     process.kill(-server.pid, 'SIGTERM');
