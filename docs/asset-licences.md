@@ -17,9 +17,9 @@ taken from image searches. Add a row before adding any asset.
 |---|---|---|---|---|
 | Preset avatars (12) | Profile pictures | Original. Drawn in code from coloured shapes in `src/components/Avatar.tsx` | Owned by the project | No image files. |
 | App icon and splash screen | Home screen, store | Not created yet | Not applicable | Expo's template icons were deliberately not copied. Add here when made. |
+| SF Symbols (iPhone) | Tab bar icons: `house`, `trophy`, `person.crop.circle` (and filled versions), `figure.run` | Supplied by iOS, drawn through `expo-symbols` (milestone 3) | Apple's SF Symbols licence: may be used in apps for Apple platforms; may not be used in app icons, logos or trademarks, or altered | Not bundled; iOS draws them. Never use one as the app icon or logo. |
+| Material Symbols (Android) | Tab bar icons: `home`, `leaderboard`, `person`, `directions_run` | Google, drawn through `expo-symbols` (milestone 3) | Apache License 2.0 | Free to use, including commercially. |
 
 ## Not yet used, record before adding
 
-- SF Symbols (iPhone icons): Apple's licence allows use in apps on Apple platforms only. Record the terms when the first symbol is used.
-- Material Symbols (Android icons): Apache License 2.0. Record when the first symbol is used.
 - Age-grading tables (milestone 7): check and record the licence before use (PRD section 12).

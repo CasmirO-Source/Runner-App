@@ -28,7 +28,7 @@ export default function NewLeague() {
     const result = await createLeague(normaliseLeagueName(name), verifiedOnly);
     setBusy(false);
     if (result.ok) {
-      router.replace({ pathname: '/league/[id]', params: { id: result.data.league.id } });
+      router.navigate({ pathname: '/standings', params: { id: result.data.league.id } });
       return;
     }
     if (result.error.fields?.name) setFieldError(result.error.fields.name);

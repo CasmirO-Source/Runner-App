@@ -59,3 +59,17 @@ test('short dates', async () => {
   const { shortDate } = await import('../../src/lib/leagues.ts');
   assert.match(shortDate('2026-10-17T12:00:00Z'), /^1[67] October$/);
 });
+
+test('standing line: place and the gap to the runner above', async () => {
+  const { standingLine } = await import('../../src/lib/leagues.ts');
+  const rows = [
+    { place: 1, user_id: 'a', display_name: 'Jordan', distance_m: 12400 },
+    { place: 2, user_id: 'b', display_name: 'Sam', distance_m: 9200 },
+    { place: 3, user_id: 'c', display_name: 'Alex', distance_m: 9200 },
+  ];
+  assert.equal(standingLine(rows, 'b'), '2nd of 3. 3.2 km behind Jordan.');
+  assert.equal(standingLine(rows, 'a'), '1st of 3. 3.2 km ahead of Sam.');
+  assert.equal(standingLine(rows, 'c'), '3rd of 3. Level with Sam.');
+  assert.equal(standingLine([rows[0]], 'a'), '1st of 1. Invite your mates to race them.');
+  assert.equal(standingLine(rows, 'zzz'), null);
+});

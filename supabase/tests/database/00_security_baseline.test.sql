@@ -37,9 +37,10 @@ select set_eq(
   $$,
   array[
     'public.profiles', 'private.rate_limits',
-    'public.seasons', 'public.leagues', 'public.league_members', 'public.invite_codes', 'private.audit_log'
+    'public.seasons', 'public.leagues', 'public.league_members', 'public.invite_codes', 'private.audit_log',
+    'public.runs'
   ],
-  'only the milestone 1 and 2 tables exist'
+  'only the milestone 1 to 3 tables exist'
 );
 
 -- 2. Signed-out users (anon) have no table or column access at all.
@@ -106,7 +107,15 @@ select set_eq(
     'authenticated SELECT public.invite_codes.league_id',
     'authenticated SELECT public.invite_codes.code',
     'authenticated SELECT public.invite_codes.created_at',
-    'authenticated SELECT public.invite_codes.expires_at'
+    'authenticated SELECT public.invite_codes.expires_at',
+    'authenticated SELECT public.runs.id',
+    'authenticated SELECT public.runs.source',
+    'authenticated SELECT public.runs.started_at',
+    'authenticated SELECT public.runs.distance_m',
+    'authenticated SELECT public.runs.duration_s',
+    'authenticated SELECT public.runs.status',
+    'authenticated SELECT public.runs.flag_reasons',
+    'authenticated SELECT public.runs.created_at'
   ],
   'column-level grants are exactly as intended (signed-in users see public fields only)'
 );
@@ -148,7 +157,9 @@ select set_eq(
     'public.revoke_invite_code service_role',
     'public.join_league service_role',
     'public.leave_league service_role',
-    'public.remove_league_member service_role'
+    'public.remove_league_member service_role',
+    'public.record_run service_role',
+    'public.league_runs authenticated'
   ],
   'functions are runnable only by the roles that need them'
 );
@@ -194,7 +205,8 @@ select set_eq(
     'public.get_my_profile', 'public.consume_rate_limit', 'private.session_is_active',
     'private.is_league_member', 'private.is_league_owner',
     'public.create_league', 'public.update_league', 'public.create_invite_code', 'public.revoke_invite_code',
-    'public.join_league', 'public.leave_league', 'public.remove_league_member'
+    'public.join_league', 'public.leave_league', 'public.remove_league_member',
+    'public.record_run', 'public.league_standings', 'public.league_runs'
   ],
   'only the reviewed functions run with raised privileges'
 );

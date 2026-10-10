@@ -64,7 +64,7 @@ function RootNavigator() {
         <Stack.Screen name="onboarding" />
       </Stack.Protected>
       <Stack.Protected guard={status === 'ready'}>
-        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="league" />
         <Stack.Screen name="join/[code]" />
       </Stack.Protected>

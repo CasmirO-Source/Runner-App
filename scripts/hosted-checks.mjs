@@ -166,7 +166,7 @@ if (token) {
   }
   r = await call('/rest/v1/', { token, headers: { Accept: 'application/openapi+json' } });
   const paths = Object.keys((await json(r))?.paths ?? {}).sort().join(' ');
-  check('the API lists only the allow-listed routes', r.status !== 200 || paths === '/ /invite_codes /league_members /leagues /profiles /rpc/get_my_profile /rpc/league_standings /seasons', paths || String(r.status));
+  check('the API lists only the allow-listed routes', r.status !== 200 || paths === '/ /invite_codes /league_members /leagues /profiles /rpc/get_my_profile /rpc/league_runs /rpc/league_standings /runs /seasons', paths || String(r.status));
   r = await call('/functions/v1/profile', { method: 'POST', token, body: { action: 'update' }, headers: { Origin: 'https://evil.example' } });
   const body = await json(r);
   check('Edge Function answers with its own error format', r.status === 400 && body?.error?.code === 'nothing_to_change', `${r.status} ${body?.error?.code ?? ''}`);
@@ -224,6 +224,44 @@ if (token) {
       check(`signed-out visitors cannot read ${path.split('?')[0].split('/').pop()}`, visitor.status === 401 || visitor.status === 403, String(visitor.status));
     }
   }
+
+  // Runs (milestone 3). Logs two typed-in runs for your account (dev data):
+  // one normal, one that fails the checks. Times are spread randomly over
+  // the last few days so running the script again does not overlap.
+  console.log('\nRun checks');
+  const ago = (hours) => new Date(Date.now() - hours * 3600_000).toISOString();
+  const normalAt = ago(1 + Math.random() * 60);
+  r = await fn('run-manual', { started_at: normalAt, distance_m: 2000, duration_s: 600 });
+  let logged = await json(r);
+  check('a normal typed-in run is accepted', r.status === 201 && logged?.status === 'accepted', `${r.status} ${logged?.status ?? logged?.error?.code ?? ''}`);
+  r = await fn('run-manual', { started_at: normalAt, distance_m: 2000, duration_s: 600 });
+  check('the same run again is refused as a duplicate', r.status === 409, String(r.status));
+  r = await fn('run-manual', { started_at: ago(70 + Math.random() * 40), distance_m: 300, duration_s: 900 });
+  logged = await json(r);
+  check('a run failing the checks is saved as flagged, with reasons', logged?.status === 'flagged' && logged.reasons?.length === 2, `${r.status} ${JSON.stringify(logged?.reasons ?? null)}`);
+  r = await fn('run-manual', { started_at: ago(2), distance_m: 2000, duration_s: 600, source: 'health' });
+  check('the app cannot choose the source', r.status === 400, String(r.status));
+  r = await call('/rest/v1/runs?select=id,status,flag_reasons&order=started_at.desc&limit=50', { token });
+  const myRuns = (await json(r)) ?? [];
+  check('you can see your own runs, including flagged ones', r.status === 200 && myRuns.some((x) => x.status === 'flagged'), `${r.status} ${myRuns.length}`);
+  r = await call('/rest/v1/runs?select=*', { token });
+  check('select=* on runs is refused (some columns are never shown)', r.status === 401 || r.status === 403, String(r.status));
+  r = await call('/rest/v1/runs', { method: 'POST', token, body: { source: 'health', started_at: ago(3), distance_m: 42195, duration_s: 9000, status: 'accepted' } });
+  check('runs cannot be written directly', r.status === 401 || r.status === 403, String(r.status));
+  r = await call('/rest/v1/rpc/record_run', { method: 'POST', token, body: { p_user_id: me?.id, p_source: 'health', p_started_at: ago(3), p_distance_m: 42195, p_duration_s: 9000, p_external_id: 'x', p_source_app: 'x', p_user_entered: false } });
+  check('the server-only record_run cannot be called directly', r.status >= 400, String(r.status));
+  if (myLeague) {
+    r = await call('/rest/v1/rpc/league_standings', { method: 'POST', token, body: { p_league_id: myLeague.id } });
+    const meRow = ((await json(r)) ?? []).find((x) => x.user_id === me?.id);
+    check('your league table counts your accepted runs', r.status === 200 && (meRow?.distance_m ?? 0) >= 2000, `${r.status} ${meRow?.distance_m ?? 'none'}`);
+    r = await call('/rest/v1/rpc/league_runs', { method: 'POST', token, body: { p_league_id: myLeague.id } });
+    const mateRow = ((await json(r)) ?? [])[0];
+    check('league runs show distance, date and source only', r.status === 200 && mateRow && Object.keys(mateRow).sort().join(',') === 'display_name,distance_m,run_date,source,user_id', `${r.status} ${mateRow ? Object.keys(mateRow).join(',') : 'none'}`);
+  }
+  r = await call('/rest/v1/rpc/league_runs', { method: 'POST', token, body: { p_league_id: crypto.randomUUID() } });
+  check("runs for a league you are not in are empty", r.status === 200 && ((await json(r)) ?? []).length === 0, String(r.status));
+  const visitorRuns = await call('/rest/v1/runs?select=id');
+  check('signed-out visitors cannot read runs', visitorRuns.status === 401 || visitorRuns.status === 403, String(visitorRuns.status));
 
   // Sign-out must kill the token everywhere at once (migration 4).
   r = await call('/rest/v1/profiles?select=id&limit=1', { token });

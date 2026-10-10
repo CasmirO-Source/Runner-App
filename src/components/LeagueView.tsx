@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Share, StyleSheet, View } from 'react-native';
 
@@ -12,11 +12,13 @@ import {
   removeMember,
   revokeInvite,
 } from '@/api/leagues';
-import { Button } from '@/components/Button';
-import { LinkButton } from '@/components/LinkButton';
-import { Screen } from '@/components/Screen';
-import { StandingsTable } from '@/components/StandingsTable';
-import { Text } from '@/components/Text';
+import { listLeagueRuns } from '@/api/runs';
+import { formatKm, shortDay } from '@/lib/runs';
+
+import { Button } from './Button';
+import { LinkButton } from './LinkButton';
+import { StandingsTable } from './StandingsTable';
+import { Text } from './Text';
 import { useAuth } from '@/hooks/useAuth';
 import { useLoad } from '@/hooks/useLoad';
 import { daysLeftLabel, formatCode, seasonName, shareMessage, shortDate } from '@/lib/leagues';
@@ -26,20 +28,21 @@ import type { Standing } from '@/types/league';
 type Loaded = Awaited<ReturnType<typeof loadLeague>>;
 
 async function loadLeague(id: string) {
-  const [league, standings, season, invite] = await Promise.all([
+  const [league, standings, season, invite, runs] = await Promise.all([
     getLeague(id),
     getStandings(id),
     getCurrentSeason(),
     getActiveInvite(id),
+    listLeagueRuns(id),
   ]);
-  return { league, standings, season, invite };
+  return { league, standings, season, invite, runs };
 }
 
 // One league: its table, the season countdown and, for the owner, invites,
-// removals and settings. Everything shown comes from the database's access
-// rules, so a non-member sees "not found" here whatever ID is in the route.
-export default function LeagueScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+// removals and settings. Shown in the League tab. Everything comes from the
+// database's access rules, so a non-member sees "not found" whatever ID is
+// asked for.
+export function LeagueView({ leagueId: id, onLeft }: { leagueId: string; onLeft: () => void }) {
   const { profile } = useAuth();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,25 +50,20 @@ export default function LeagueScreen() {
 
   const data: Loaded | null = loaded.data;
   if (!data || !profile) {
-    return (
-      <Screen>
-        <LinkButton label="Back" onPress={() => router.back()} />
-      </Screen>
-    );
+    return null;
   }
 
   const league = data.league.ok ? data.league.data : null;
   if (!league) {
     const failed = !data.league.ok;
     return (
-      <Screen>
-        <LinkButton label="Back" onPress={() => router.back()} />
+      <View style={styles.section}>
         <Text variant="title">{failed ? 'No connection' : 'League not found'}</Text>
         <Text colour="textSecondary">
           {failed ? "We couldn't load this league. Check your connection." : "You're not in this league, or it has closed."}
         </Text>
         {failed ? <Button label="Try again" onPress={loaded.reload} /> : null}
-      </Screen>
+      </View>
     );
   }
 
@@ -73,6 +71,7 @@ export default function LeagueScreen() {
   const rows = data.standings.ok ? data.standings.data : [];
   const season = data.season.ok ? data.season.data : null;
   const invite = data.invite.ok ? data.invite.data : null;
+  const mateRuns = data.runs.ok ? data.runs.data.slice(0, 10) : [];
   const othersRemain = rows.some((r) => r.user_id !== profile.id);
 
   async function run(action: () => Promise<{ ok: boolean; error?: { message: string } }>, done?: string) {
@@ -111,7 +110,7 @@ export default function LeagueScreen() {
             setBusy(true);
             const result = await leaveLeague(league!.id);
             setBusy(false);
-            if (result.ok) router.replace('/');
+            if (result.ok) onLeft();
             else setMessage(result.error.message);
           },
         },
@@ -120,8 +119,7 @@ export default function LeagueScreen() {
   }
 
   return (
-    <Screen>
-      <LinkButton label="Back" onPress={() => router.back()} />
+    <View style={styles.page}>
       <View style={styles.heading}>
         <Text variant="title">{league.name}</Text>
         {season ? (
@@ -139,9 +137,25 @@ export default function LeagueScreen() {
       <View>
         <StandingsTable rows={rows} myId={profile.id} onRemove={isOwner ? confirmRemove : undefined} />
         <Text variant="caption" colour="textSecondary">
-          {`${rows.length} of ${league.member_limit} places taken. Distances show here once you can log runs.`}
+          {`${rows.length} of ${league.member_limit} places taken.${league.verified_only ? ' Only verified runs count.' : ''}`}
         </Text>
       </View>
+
+      {mateRuns.length > 0 ? (
+        <View style={styles.section}>
+          <Text variant="heading">Recent runs</Text>
+          {mateRuns.map((r, i) => (
+            <View key={`${r.user_id}-${r.run_date}-${i}`} style={styles.runRow}>
+              <Text numberOfLines={1}>
+                {`${shortDay(new Date(r.run_date))}  ${r.user_id === profile.id ? 'You' : r.display_name}`}
+              </Text>
+              <Text variant="bodyStrong" tabular>
+                {`${formatKm(r.distance_m)}${r.source === 'health' ? '' : ' (typed in)'}`}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       {message ? (
         <Text colour="textSecondary" accessibilityRole="alert">
@@ -176,15 +190,23 @@ export default function LeagueScreen() {
       ) : (
         <Button label={isOwner ? 'Close league' : 'Leave league'} variant="secondary" disabled={busy} onPress={confirmLeave} />
       )}
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  page: {
+    gap: space.xl,
+  },
   heading: {
     gap: space.xs,
   },
   section: {
+    gap: space.md,
+  },
+  runRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: space.md,
   },
 });

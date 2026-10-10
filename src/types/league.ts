@@ -15,6 +15,7 @@ export type Standing = {
   display_name: string;
   avatar_id: number;
   distance_m: number;
+  run_count: number;
 };
 
 export type Invite = {

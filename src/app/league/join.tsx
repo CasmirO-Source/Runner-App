@@ -25,7 +25,7 @@ export default function JoinLeague() {
     const result = await joinLeague(normaliseCode(code));
     setBusy(false);
     if (result.ok) {
-      router.replace({ pathname: '/league/[id]', params: { id: result.data.league_id } });
+      router.navigate({ pathname: '/standings', params: { id: result.data.league_id } });
       return;
     }
     setError(result.error.message);

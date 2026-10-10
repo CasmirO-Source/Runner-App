@@ -200,12 +200,18 @@ select throws_ok($$ select * from public.update_league(pg_temp.id('A'), pg_temp.
 insert into ids select 'LA2', id from public.create_league(pg_temp.id('A'), 'Leeds Evening Club', false);
 select ok(pg_temp.id('LA2') is not null, 'after closing, the owner can start a new league');
 
--- Standings shape (access rules are tested through the API) ---------------------------------
+-- Standings shape (distances are tested in 04_runs) ---------------------------------
+insert into auth.sessions (id, user_id, created_at, updated_at) values
+  ('b0000000-0000-4000-8000-000000000002', pg_temp.id('B'), now(), now());
+select set_config('request.jwt.claims', json_build_object('role', 'authenticated', 'sub', pg_temp.id('B'),
+  'session_id', 'b0000000-0000-4000-8000-000000000002')::text, true);
 select results_eq(
-  $$ select place, display_name, distance_m from public.league_standings(pg_temp.id('LB')) $$,
-  $$ values (1, 'League B', 0) $$,
-  'standings list members with places and distance 0 until runs exist'
+  $$ select place, display_name, distance_m, run_count from public.league_standings(pg_temp.id('LB')) $$,
+  $$ values (1, 'League B', 0, 0) $$,
+  'a member sees the standings: places, names and distances'
 );
+select pg_temp.as_user(pg_temp.id('C'));
+select is_empty($$ select * from public.league_standings(pg_temp.id('LB')) $$, 'a non-member sees no standings');
 
 select * from finish();
 rollback;

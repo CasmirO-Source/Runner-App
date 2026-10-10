@@ -14,13 +14,21 @@ Ideas and feedback for the app's layout and look. Navigation structure is built 
 ### Navigation (milestone 3, first step)
 
 - A bottom tab bar using Expo Router's built-in tabs, with native icons (`expo-symbols`: SF Symbols on iPhone, Material Symbols on Android, as PRD 13.1 asks).
-- Tabs appear only when their feature exists, so there are never empty or "coming soon" tabs:
-  - Milestone 3: Home, League, Run, You.
-  - Milestone 6: Duels.
-  - Milestone 7: Pro (locked preview for free users).
-- Keep to 5 tabs at most (the iPhone tab bar shows 5 before hiding the rest under "More"). The final set is decided at the design pass; one option is Home, League, Run, Duels, You, with Pro reached from Home and You.
-- The League tab opens your league's table directly; with more than one league, a switcher sits at the top.
-- Sign out moves from Home to the You tab.
+- **Five tabs, adopted by the owner on 10 October 2026** (the most an iPhone tab bar shows before "More"; the centre tab gives symmetry):
+
+  | Position | Tab | Contents | Arrives |
+  |---|---|---|---|
+  | 1 | Home | League position, gap to the runner above, days left, any live duel, start or join a league | Now; position and gap in milestone 3 |
+  | 2 | League | The table, league switcher, past seasons and final standings; later a Challenge button per mate | Now; past seasons milestone 3; challenges milestone 6 |
+  | 3 (centre) | Run | Log a run: Health sync status, manual entry, later the screenshot upload (any running app, including Strava) | Milestone 3; screenshots milestone 4 |
+  | 4 | Activity | Free: your runs with their status (and the reason if flagged), distance and runs per week. Pro: analytics, shown to free users as a locked preview with one real insight | Runs list milestone 3; Pro section milestone 7 |
+  | 5 | You | Profile, Stride and rating history, duel record, settings, privacy, data export, delete account, Help | Now; filled over milestones 5, 6 and 9 |
+
+- Tabs appear only when their feature exists, so there are never empty or "coming soon" tabs. Run and Activity arrive with manual entry (milestone 3).
+- Duels live on Home (live duel card) and in the League table (Challenge), since they are always between league-mates. If duels turn out to be used constantly, Duels could take Home's place.
+- Help and support: fixed help pages and a contact email inside You (PRD 12: support comes from people or fixed help pages).
+- The League tab opens your league's table directly; with more than one league, a switcher sits at the top. Done in milestone 3 step 1.
+- Sign out moved from Home to the You tab. Done in milestone 3 step 1.
 
 ### Design pass (after the MVP features, before the friends test or at the milestone 9 design audit)
 
@@ -28,11 +36,31 @@ Ideas and feedback for the app's layout and look. Navigation structure is built 
 - Swiping between tabs needs an extra package (a pager view). Ask before adding.
 - Rounded cards on solid surfaces; no coloured borders (B #5), no glass (B #6), no fade-only presses (B #14).
 
+- Accent colour: the owner considered forest green instead of signal orange (10 October 2026) and chose to keep orange for now and revisit here. A contrast-checked green set exists (light `#1F5C3A` with off-white button text; dark `#4CAF73` with near-black text, `#5DBB82` for green text), with the accent green doubling as "up". Switching needs PRD 13.1 and Appendix B #1 amended, then one tokens edit.
+
+### Chess-inspired ideas (owner, 10 October 2026)
+
+Adopted into PRD version 1.1:
+
+- Duel lengths named **Sprint** (3 days), **Tempo** (7 days) and **Endurance** (14 days). Milestone 6.
+- Duel record and head-to-head stats between friends, free. Milestone 6.
+- Run review per run, pace accuracy, and head-to-head run styles (opt-in, off by default) for Pro. Milestone 7.
+- History import of verified Health runs from the last 120 days. Milestone 3, step 5.
+
+Not adopted, with reasons:
+
+- "Chess.com" in the name or listing: another company's brand (Appendix C #5). Inspiration only.
+- Chess time-control names: owner chose running names instead.
+- Micro-games inside a run feeding the rating: would make Stride gameable; the useful part lives in the run review.
+- Cadence and heart-rate scoring: many runners do not record them, so it would be unfair.
+- A 24-hour duel and a duel rating: future versions (PRD 15).
+
 ### Not now, and why
 
 - **Matchmaking against strangers (the Arena):** out of scope for version 1 (PRD section 3; planned for version 2 in section 15). No tile or "coming soon" entry: out-of-scope items are not built, even partially.
 - **1v1 against friends:** milestone 6. Its tile and tab arrive with duels.
 - **Pro analytics:** milestone 7. Its locked preview arrives then.
+- **An AI agent that answers running questions (owner idea, 10 October 2026):** not in version 1. PRD section 3 rules out any AI feature other than the screenshot reader; PRD 12 says "No AI support chatbot"; and PRD 5.6 and 12 require advice never to become medical advice, which is hard to guarantee when an AI answers anything. Pro coaching in version 1 is rule-based so every number can be explained and tested. "AI-written coaching summaries" is already listed for a future version (PRD 15); revisit this idea then, with a safety review.
 
 ## Other improvements noted
 
