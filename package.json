@@ -31,14 +31,14 @@
     "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.3",
-    "react": "19.2.3",
+    "react": "19.3.0",
     "react-native": "0.86.3",
-    "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.26.0"
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.28.0"
   },
   "devDependencies": {
     "@types/node": "^24.19.1",
-    "@types/react": "~19.2.2",
+    "@types/react": "~19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
     "supabase": "^2.120.0",
