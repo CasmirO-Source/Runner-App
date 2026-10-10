@@ -17,10 +17,11 @@ async function loadHome() {
   return { leagues, season };
 }
 
-// Home: your leagues and the season countdown. League position and the gap
-// to the runner above arrive with run logging (milestone 3).
+// Home tab: your leagues and the season countdown. Tapping a league opens it
+// in the League tab. League position and the gap to the runner above arrive
+// with run logging (milestone 3, step 2).
 export default function Home() {
-  const { profile, signOut } = useAuth();
+  const { profile } = useAuth();
   const loaded = useLoad(async () => ({ ok: true as const, data: await loadHome() }));
   if (!profile) return null;
 
@@ -61,7 +62,7 @@ export default function Home() {
           key={l.id}
           title={l.name}
           subtitle={l.owner_id === profile.id ? 'You run this league' : 'Member'}
-          onPress={() => router.push({ pathname: '/league/[id]', params: { id: l.id } })}
+          onPress={() => router.navigate({ pathname: '/standings', params: { id: l.id } })}
         />
       ))}
 
@@ -78,7 +79,6 @@ export default function Home() {
         </View>
       ) : null}
 
-      <Button label="Sign out" variant="secondary" onPress={signOut} />
     </Screen>
   );
 }
