@@ -1,0 +1,9 @@
+{
+  "//": "Tests run in Node, so they get Node's types. App code does not, because Node APIs such as Buffer do not exist on a phone.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["**/*.ts"],
+  "exclude": []
+}

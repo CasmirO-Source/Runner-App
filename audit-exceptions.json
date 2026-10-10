@@ -1,0 +1,23 @@
+{
+  "//": "High or critical npm audit advisories we have knowingly accepted. Each one needs the advisory ID, the package, why it is acceptable, and a review date no more than one month away. CI fails on any high or critical advisory not listed here, on any entry past its review date, and on any entry that no longer applies. Only the owner approves additions.",
+  "exceptions": [
+    {
+      "id": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
+      "severity": "high",
+      "reason": "No patched version exists (3.0.3 is the latest release and is affected). Used only by the Metro bundler file watcher (through micromatch) on developer machines and CI, never shipped in the app. The attack needs a hostile glob pattern, and every pattern comes from our own config.",
+      "approvedBy": "Cas",
+      "approvedOn": "2026-10-09",
+      "reviewBy": "2026-11-09"
+    },
+    {
+      "id": "GHSA-86w9-cpqp-85rv",
+      "package": "node-forge",
+      "severity": "high",
+      "reason": "No patched version exists (1.4.0 is the latest release and is affected). Used only by the Expo command line tool for over-the-air update code signing, which this project does not use. Runs on developer machines and CI, never shipped in the app.",
+      "approvedBy": "Cas",
+      "approvedOn": "2026-10-09",
+      "reviewBy": "2026-11-09"
+    }
+  ]
+}

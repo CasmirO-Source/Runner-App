@@ -1,2 +1,46 @@
+# Environment files: every variant is ignored, only the placeholder example is committed
 .env
+.env.*
+.env*.local
+!.env.example
+
+# macOS
 .DS_Store
+
+# Dependencies
+node_modules/
+
+# Expo and build outputs
+.expo/
+.expo-shared/
+dist/
+web-build/
+build/
+ios/
+android/
+*.tsbuildinfo
+expo-env.d.ts
+.metro-health-check*
+
+# Signing keys and store credentials
+*.p8
+*.p12
+*.key
+*.pem
+*.jks
+*.keystore
+*.mobileprovision
+credentials.json
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/
+supabase/functions/.env
+supabase/.env
+
+# Logs
+npm-debug.*
+*.log

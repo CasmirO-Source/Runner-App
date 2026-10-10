@@ -1,0 +1,52 @@
+{
+  "name": "runner-app",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo start --ios",
+    "android": "expo start --android",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
+    "test:unit": "node --test \"tests/unit/**/*.test.ts\"",
+    "prepare": "node scripts/install-git-hooks.mjs",
+    "audit:check": "node scripts/audit-check.mjs",
+    "typecheck:functions": "node scripts/check-functions.mjs",
+    "test:db": "node scripts/test-db.mjs",
+    "test:integration": "node scripts/test-integration.mjs",
+    "lint": "eslint . --max-warnings 0",
+    "design:check": "node scripts/design-check.mjs",
+    "audit:functions": "node scripts/function-deps.mjs",
+    "check:hosted": "node --env-file=.env scripts/hosted-checks.mjs"
+  },
+  "dependencies": {
+    "@expo-google-fonts/barlow-condensed": "^0.4.1",
+    "@supabase/supabase-js": "^2.117.3",
+    "expo": "~57.0.27",
+    "expo-constants": "~57.0.21",
+    "expo-font": "~57.0.4",
+    "expo-haptics": "~57.0.3",
+    "expo-linking": "~57.0.12",
+    "expo-router": "~57.0.25",
+    "expo-secure-store": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
+    "supabase": "^2.120.0",
+    "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "react-dom": "$react"
+  },
+  "allowScripts": {
+    "unrs-resolver": false
+  }
+}
