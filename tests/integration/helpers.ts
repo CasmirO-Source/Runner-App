@@ -112,6 +112,17 @@ export async function api(
 export const callProfile = (token: string | undefined, body: unknown, options: Parameters<typeof api>[1] = {}) =>
   api('/functions/v1/profile', { method: 'POST', token, body, ...options });
 
+export const callFunction = (name: string, token: string | undefined, body: unknown, options: Parameters<typeof api>[1] = {}) =>
+  api(`/functions/v1/${name}`, { method: 'POST', token, body, ...options });
+
+// A signed-in user with a profile (leagues need one).
+export async function createRunner(label: string): Promise<TestUser> {
+  const user = await createUser(label);
+  const r = await callProfile(user.token, { action: 'create', display_name: testName(label.replace(/[^A-Za-z]/g, '').slice(0, 8)), avatar_id: 1, over_18: true });
+  if (r.status !== 201) throw new Error(`Could not create a profile for ${label}: ${r.status}`);
+  return user;
+}
+
 // Reads or resets state directly in the local database (as the database
 // owner) so tests can check what really changed, independently of the API.
 export function sql(query: string): string {

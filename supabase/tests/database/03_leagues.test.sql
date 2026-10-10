@@ -169,7 +169,8 @@ select is(public.remove_league_member(pg_temp.id('A'), pg_temp.id('LA'), pg_temp
 select is(public.remove_league_member(pg_temp.id('A'), pg_temp.id('LA'), pg_temp.id('D')), 'removed', 'the owner removes D');
 select is(public.remove_league_member(pg_temp.id('A'), pg_temp.id('LA'), pg_temp.id('D')), 'not_found', 'D cannot be removed twice');
 select results_eq(
-  $$ select action, actor_id, league_id, target_user_id from private.audit_log where action = 'league_member_removed' $$,
+  $$ select action, actor_id, league_id, target_user_id from private.audit_log
+     where action = 'league_member_removed' and league_id = pg_temp.id('LA') $$,
   $$ values ('league_member_removed', pg_temp.id('A'), pg_temp.id('LA'), pg_temp.id('D')) $$,
   'the removal is in the audit log, by ID only'
 );
