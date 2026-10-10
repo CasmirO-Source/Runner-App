@@ -12,6 +12,9 @@ import {
   removeMember,
   revokeInvite,
 } from '@/api/leagues';
+import { listLeagueRuns } from '@/api/runs';
+import { formatKm, shortDay } from '@/lib/runs';
+
 import { Button } from './Button';
 import { LinkButton } from './LinkButton';
 import { StandingsTable } from './StandingsTable';
@@ -25,13 +28,14 @@ import type { Standing } from '@/types/league';
 type Loaded = Awaited<ReturnType<typeof loadLeague>>;
 
 async function loadLeague(id: string) {
-  const [league, standings, season, invite] = await Promise.all([
+  const [league, standings, season, invite, runs] = await Promise.all([
     getLeague(id),
     getStandings(id),
     getCurrentSeason(),
     getActiveInvite(id),
+    listLeagueRuns(id),
   ]);
-  return { league, standings, season, invite };
+  return { league, standings, season, invite, runs };
 }
 
 // One league: its table, the season countdown and, for the owner, invites,
@@ -67,6 +71,7 @@ export function LeagueView({ leagueId: id, onLeft }: { leagueId: string; onLeft:
   const rows = data.standings.ok ? data.standings.data : [];
   const season = data.season.ok ? data.season.data : null;
   const invite = data.invite.ok ? data.invite.data : null;
+  const mateRuns = data.runs.ok ? data.runs.data.slice(0, 10) : [];
   const othersRemain = rows.some((r) => r.user_id !== profile.id);
 
   async function run(action: () => Promise<{ ok: boolean; error?: { message: string } }>, done?: string) {
@@ -132,9 +137,25 @@ export function LeagueView({ leagueId: id, onLeft }: { leagueId: string; onLeft:
       <View>
         <StandingsTable rows={rows} myId={profile.id} onRemove={isOwner ? confirmRemove : undefined} />
         <Text variant="caption" colour="textSecondary">
-          {`${rows.length} of ${league.member_limit} places taken. Distances show here once you can log runs.`}
+          {`${rows.length} of ${league.member_limit} places taken.${league.verified_only ? ' Only verified runs count.' : ''}`}
         </Text>
       </View>
+
+      {mateRuns.length > 0 ? (
+        <View style={styles.section}>
+          <Text variant="heading">Recent runs</Text>
+          {mateRuns.map((r, i) => (
+            <View key={`${r.user_id}-${r.run_date}-${i}`} style={styles.runRow}>
+              <Text numberOfLines={1}>
+                {`${shortDay(new Date(r.run_date))}  ${r.user_id === profile.id ? 'You' : r.display_name}`}
+              </Text>
+              <Text variant="bodyStrong" tabular>
+                {`${formatKm(r.distance_m)}${r.source === 'health' ? '' : ' (typed in)'}`}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       {message ? (
         <Text colour="textSecondary" accessibilityRole="alert">
@@ -181,6 +202,11 @@ const styles = StyleSheet.create({
     gap: space.xs,
   },
   section: {
+    gap: space.md,
+  },
+  runRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: space.md,
   },
 });

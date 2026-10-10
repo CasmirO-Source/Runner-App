@@ -454,3 +454,6 @@ verify_jwt = true
 
 [functions.league-member]
 verify_jwt = true
+
+[functions.run-manual]
+verify_jwt = true

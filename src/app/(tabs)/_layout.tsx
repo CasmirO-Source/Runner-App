@@ -5,9 +5,10 @@ import { TabIcon } from '@/components/TabIcon';
 import { fontFamilies, stroke, typography } from '@/theme/tokens';
 import { useColours } from '@/theme/useTheme';
 
-// Bottom tabs, so the main screens are one tap away (owner feedback,
-// docs/ui-backlog.md). Tabs appear only once their feature exists: Run arrives
-// with run logging, Duels in milestone 6, Pro in milestone 7.
+// Five bottom tabs, so the main screens are one tap away (owner decision,
+// docs/ui-backlog.md): Home, League, Run (centre), Activity, You. Duels live
+// on Home and in the League table (milestone 6); Pro analytics join the
+// Activity tab (milestone 7).
 export default function TabLayout() {
   const c = useColours();
   return (
@@ -39,6 +40,22 @@ export default function TabLayout() {
         options={{
           title: 'League',
           tabBarIcon: ({ color, size, focused }) => <TabIcon ios={focused ? 'trophy.fill' : 'trophy'} android="leaderboard" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="run"
+        options={{
+          title: 'Run',
+          tabBarIcon: ({ color, size }) => <TabIcon ios="figure.run" android="directions_run" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="activity"
+        options={{
+          title: 'Activity',
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon ios={focused ? 'chart.bar.fill' : 'chart.bar'} android="bar_chart" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen

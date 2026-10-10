@@ -74,3 +74,29 @@ export function shortDate(iso: string): string {
   const d = new Date(iso);
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
+
+type Placed = { place: number; user_id: string; display_name: string; distance_m: number };
+
+// "2nd of 4. 3.2 km behind Jordan" (PRD 5.2 and 13.3). Null if you are not
+// in the table.
+export function standingLine(rows: Placed[], myId: string): string | null {
+  const i = rows.findIndex((r) => r.user_id === myId);
+  if (i < 0) return null;
+  const me = rows[i];
+  const place = `${ordinalPlace(me.place)} of ${rows.length}`;
+  if (rows.length === 1) return `${place}. Invite your mates to race them.`;
+  if (i === 0) {
+    const next = rows[1];
+    const lead = me.distance_m - next.distance_m;
+    return lead === 0 ? `${place}. Level with ${next.display_name}.` : `${place}. ${(lead / 1000).toFixed(1)} km ahead of ${next.display_name}.`;
+  }
+  const above = rows[i - 1];
+  const gap = above.distance_m - me.distance_m;
+  return gap === 0 ? `${place}. Level with ${above.display_name}.` : `${place}. ${(gap / 1000).toFixed(1)} km behind ${above.display_name}.`;
+}
+
+function ordinalPlace(n: number): string {
+  const tens = n % 100;
+  if (tens >= 11 && tens <= 13) return `${n}th`;
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+}

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { getCurrentSeason, listMyLeagues } from '@/api/leagues';
+import { getCurrentSeason, getStandings, listMyLeagues } from '@/api/leagues';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { ListItem } from '@/components/ListItem';
@@ -9,17 +9,25 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { useAuth } from '@/hooks/useAuth';
 import { useLoad } from '@/hooks/useLoad';
-import { daysLeftLabel, seasonName } from '@/lib/leagues';
+import { daysLeftLabel, seasonName, standingLine } from '@/lib/leagues';
+import type { Standing } from '@/types/league';
 import { space } from '@/theme/tokens';
 
 async function loadHome() {
   const [leagues, season] = await Promise.all([listMyLeagues(), getCurrentSeason()]);
-  return { leagues, season };
+  const standings: Record<string, Standing[]> = {};
+  if (leagues.ok) {
+    const tables = await Promise.all(leagues.data.map((l) => getStandings(l.id)));
+    leagues.data.forEach((l, i) => {
+      const t = tables[i];
+      if (t.ok) standings[l.id] = t.data;
+    });
+  }
+  return { leagues, season, standings };
 }
 
-// Home tab: your leagues and the season countdown. Tapping a league opens it
-// in the League tab. League position and the gap to the runner above arrive
-// with run logging (milestone 3, step 2).
+// Home tab: your place in each league, the gap to the runner above, and the
+// season countdown (PRD 13.3). Tapping a league opens it in the League tab.
 export default function Home() {
   const { profile } = useAuth();
   const loaded = useLoad(async () => ({ ok: true as const, data: await loadHome() }));
@@ -61,7 +69,7 @@ export default function Home() {
         <ListItem
           key={l.id}
           title={l.name}
-          subtitle={l.owner_id === profile.id ? 'You run this league' : 'Member'}
+          subtitle={standingLine(loaded.data?.standings[l.id] ?? [], profile.id) ?? (l.owner_id === profile.id ? 'You run this league' : 'Member')}
           onPress={() => router.navigate({ pathname: '/standings', params: { id: l.id } })}
         />
       ))}
