@@ -177,6 +177,7 @@ Visual check: the owner reports screenshots of every new screen in light and dar
 | REST API CORS | Echoes any origin; Supabase platform behaviour, not configurable; low risk (#20) | Platform |
 | Auth per-IP limits | Burst of 30 always allowed; steady rate about 24 an hour against the PRD's 20 | Platform |
 | Password route | Cannot be disabled; strong passwords and email confirmation required | Platform |
+| Branch protection on `main` | Rules can be created but GitHub shows them as "Not enforced" on private repositories under a free personal account. CI still runs on every push and pull request, but nothing blocks a merge while it fails: check all three jobs are green before merging. Enforced protection needs GitHub Pro or above | Platform |
 | Signed-out tokens | Migration 4: REST API refuses them at once (Option A) | Owner |
 | Realtime | Private channels only, set through the Management API | Owner |
 | Advisor: leaked-password protection | Left off: the app has no passwords | Owner |
@@ -194,7 +195,7 @@ Visual check: the owner reports screenshots of every new screen in light and dar
 Before approving milestone 1:
 
 - [x] Screenshots checked against section 5; "Step 1 of 3" label approved as designed (#9).
-- [x] GitHub: Dependabot alerts on. Branch protection needs a paid GitHub plan (not set).
+- [x] GitHub: Dependabot alerts on. Branch protection is not enforced on this plan (platform limit, section 7).
 - [x] Two-factor login on every developer account (A45).
 - [x] Supabase-managed JWT signing keys (A26).
 - [x] Database password secure (A30).
