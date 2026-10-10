@@ -76,7 +76,7 @@ Input handling
 6. Every Edge Function validates input with a strict zod schema and rejects unexpected fields.
 7. No SQL is ever built from strings containing user input. Supabase client, parameterised queries or database functions only.
 8. User text is shown as plain text, length-limited and character-restricted.
-9. File uploads: type and size checked server-side, re-encoded, metadata stripped, private bucket, signed links expire after 5 minutes.
+9. File uploads: type checked by content and size checked server-side, re-encoded, metadata stripped. Screenshots are never stored (PRD 1.2): read in memory, then discarded. Any future stored upload: private bucket, signed links expire after 5 minutes.
 
 Rate limits
 - Every endpoint returns HTTP 429 with a retry time when a limit is hit. Limits apply per user and per IP. See the table in section 9.3.

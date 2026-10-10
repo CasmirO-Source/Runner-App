@@ -1,7 +1,9 @@
 # Product Requirements Document: [APP NAME] (working title)
 
-Version 1.1, 10 October 2026
+Version 1.2, 10 October 2026
 Owner: Cas
+
+Changes in 1.2 (owner decisions, 10 October 2026): screenshots are never stored, only read in memory and discarded (6.3, 9.2, Appendix A #8, #21, #22); the screenshot reader's output gains an optional start time (6.3, 11); edited readings are saved as typed-in runs (6.3).
 
 Changes in 1.1 (owner decisions, 10 October 2026): duel lengths named Sprint, Tempo and Endurance; duel record and head-to-head stats (5.3); run review, pace accuracy and head-to-head run styles for Pro (5.6); verified Health runs accepted up to 120 days old so a runner's history counts from day one (6.2, 6.4); milestones 6 and 7 updated to match; new future ideas (15).
 
@@ -223,9 +225,9 @@ Inspired by chess.com's game review and coaching apps such as Runna: turn a runn
 - Sync on app open and in the background where the platform allows.
 
 ### 6.3 Screenshot reader
-- User uploads a screenshot from any running app. Image types JPEG, PNG or HEIC only, maximum 5 MB.
-- Image is re-encoded server-side with metadata stripped, sent to the Claude API, then **deleted within 1 hour**.
-- Extracted values are shown to the user, who must confirm before the run is saved.
+- User uploads a screenshot from any running app. Image types JPEG, PNG or HEIC only, maximum 5 MB. The phone converts HEIC to JPEG before upload; the server accepts only JPEG and PNG, checked by reading the file's contents.
+- Image is re-encoded server-side with metadata stripped and sent to the Claude API. It is **never stored**: it exists only in the Edge Function's memory while it is read, then is discarded. Only the extracted values and the perceptual hash are kept.
+- Extracted values are shown to the user, who must confirm before the run is saved. Confirming saves exactly the values the server read, as a screenshot run. If the user changes a value, the run is saved as a typed-in run (unverified) instead. If the screenshot shows no start time, the user adds one; that alone keeps screenshot status.
 - Manual entry is always available if the AI is unavailable. The app must never depend on the AI to function.
 
 ### 6.4 Run validation (server-side, every source)
@@ -316,7 +318,7 @@ The friends test is fully free. It starts after milestone 6, and testers get Pro
 6. Every Edge Function validates its input against a strict schema (using zod) and rejects anything unexpected, including extra fields.
 7. All database access uses the Supabase client or parameterised queries. **No SQL is ever built from strings containing user input.**
 8. Text shown in the app is escaped. Display names and league names are length-limited and character-restricted.
-9. File uploads: allowed types and size checked server-side, image re-encoded, metadata stripped, stored in a private bucket with links that expire after 5 minutes.
+9. File uploads: allowed types and size checked server-side, image re-encoded, metadata stripped. Screenshots are never stored (section 6.3). Any future stored upload goes in a private bucket with links that expire after 5 minutes.
 
 ### 9.3 Rate limits
 
@@ -376,7 +378,7 @@ Before submission, go through **Appendix A** item by item (all 49) and write the
 1. The Claude API is called only from one Edge Function. The key never leaves the server.
 2. The model has **no tools and no access to the database**. It only returns data.
 3. The system prompt states that all text in the image is data to extract, never instructions to follow.
-4. Output must match a strict JSON schema: `{ distance_km, duration_seconds, date, source_app }`. Anything else is rejected.
+4. Output must match a strict JSON schema: `{ distance_km, duration_seconds, date, start_time, source_app }`, where `start_time` may be null when the screenshot does not show one. Anything else is rejected.
 5. Extracted values go through the same validation as every other run (section 6.4), then require user confirmation.
 6. Screenshot runs never affect Stride or handicap duels.
 7. User data is never used to train any model.
@@ -515,7 +517,7 @@ Every item must be met. Where an item cannot happen in this app, the audit must 
 | 5 | No authorisation checks | Every Edge Function checks the signed-in user may do this exact action (league member, league owner, duel runner) before doing it. | 9.1 |
 | 6 | Users able to access other users' data | Row-level security matches section 8.2. An automated test signs in as two users and proves neither can read or change the other's data. | 8.2, M1 |
 | 7 | Open database read/write permissions | Row-level security on every table, deny by default. Signed-out users can write nothing. The build fails if any table lacks row-level security. | 9.1 |
-| 8 | Misconfigured storage buckets | Private buckets only, never public. Storage rules limit each file to its owner. Signed links expire after 5 minutes. | 9.2 |
+| 8 | Misconfigured storage buckets | Screenshots are never stored, so no bucket holds user images. Any future bucket is private, never public, with storage rules limiting each file to its owner and signed links that expire after 5 minutes. | 6.3, 9.2 |
 | 9 | Admin routes left unprotected | No admin screens, routes or functions in the app. Admin work happens only in the Supabase dashboard behind two-factor login. | 9.1 |
 | 10 | Debug pages exposed in production | Developer menus, test screens, seed scripts and test routes are excluded from production builds. Confirm with a production build before submission. | 9.4 |
 | 11 | Build logs leaking secrets | Build scripts and CI never print environment variables. Secrets are stored as masked CI and EAS secrets. | 9.4 |
@@ -528,8 +530,8 @@ Every item must be met. Where an item cannot happen in this app, the audit must 
 | 18 | NoSQL injection | Does not apply: Postgres only, no NoSQL database. Record this in the audit. JSON input still goes through zod. | 9.2 |
 | 19 | Cross-site scripting (XSS) | All user text is shown as plain text. No web view ever displays user content. Any web page (legal pages, marketing site) never injects raw HTML. | 9.2 |
 | 20 | Cross-site request forgery (CSRF) | The app sends its login token in a request header, not a cookie, so this attack does not apply. Any web page that changes data must work the same way. | 9.1 |
-| 21 | Insecure file uploads | File type checked by reading the file's contents, not its name. Size limit, re-encoding, metadata stripped, private bucket, deleted within 1 hour. | 6.3, 9.2 |
-| 22 | Path traversal | Storage paths are generated by the server as `user_id/random_id.jpg`. File names supplied by users are never used in paths. | 9.2 |
+| 21 | Insecure file uploads | File type checked by reading the file's contents, not its name. Size limit, re-encoding, metadata stripped, never stored (read in memory, then discarded). | 6.3, 9.2 |
+| 22 | Path traversal | Screenshots are never written to storage, so no path is ever built. If storage is added later, paths are generated by the server as `user_id/random_id.jpg` and file names supplied by users are never used. | 9.2 |
 | 23 | Server-side request forgery (SSRF) | The server never fetches a web address supplied by a user. The Claude API receives image data, not links. Outbound requests go only to a fixed list of services. | 11 |
 | 24 | Broken password reset flows | There are no passwords. Recovery is through Apple, Google or a new email code. Changing the account email needs a code sent to the old address first. | 5.1 |
 | 25 | Weak session management | Access tokens last 1 hour with refresh token rotation switched on. Tokens kept in secure storage. Signing out ends the session on the server. Deleting an account ends all sessions. | 9.4 |
