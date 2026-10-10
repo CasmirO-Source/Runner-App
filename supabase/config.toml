@@ -442,3 +442,15 @@ enabled = true
 # independent checks.
 [functions.profile]
 verify_jwt = true
+
+[functions.league]
+verify_jwt = true
+
+[functions.league-invite]
+verify_jwt = true
+
+[functions.league-join]
+verify_jwt = true
+
+[functions.league-member]
+verify_jwt = true

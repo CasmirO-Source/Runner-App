@@ -166,7 +166,7 @@ if (token) {
   }
   r = await call('/rest/v1/', { token, headers: { Accept: 'application/openapi+json' } });
   const paths = Object.keys((await json(r))?.paths ?? {}).sort().join(' ');
-  check('the API lists only the allow-listed routes', r.status !== 200 || paths === '/ /profiles /rpc/get_my_profile', paths || String(r.status));
+  check('the API lists only the allow-listed routes', r.status !== 200 || paths === '/ /invite_codes /league_members /leagues /profiles /rpc/get_my_profile /rpc/league_standings /seasons', paths || String(r.status));
   r = await call('/functions/v1/profile', { method: 'POST', token, body: { action: 'update' }, headers: { Origin: 'https://evil.example' } });
   const body = await json(r);
   check('Edge Function answers with its own error format', r.status === 400 && body?.error?.code === 'nothing_to_change', `${r.status} ${body?.error?.code ?? ''}`);
@@ -174,6 +174,57 @@ if (token) {
   check("our Edge Function's own replies do not allow other websites (CORS)", !allowsAnySite(r), r.headers.get('access-control-allow-origin') ?? 'no header');
   const signedInRealtime = await realtimeSubscribe(token);
   check('Realtime public channels are switched off (signed in)', signedInRealtime !== 'SUBSCRIBED', signedInRealtime);
+  // Leagues (milestone 2). Uses your own league if you run one, otherwise
+  // starts "Hosted Check League". The invite code made here is stopped again
+  // at the end, so no live code is left behind.
+  console.log('\nLeague checks');
+  const fn = (name, body) => call(`/functions/v1/${name}`, { method: 'POST', token, body });
+  r = await call('/rest/v1/seasons?select=month,starts_at,ends_at&order=month', { token });
+  const seasons = await json(r);
+  check('seasons exist for this month and next', r.status === 200 && seasons.length >= 2, `${r.status} ${seasons?.length ?? 0}`);
+  const me = (await json(await call('/rest/v1/rpc/get_my_profile', { method: 'POST', token, body: {} })))?.[0];
+  r = await call('/rest/v1/leagues?select=id,name,owner_id', { token });
+  let myLeague = ((await json(r)) ?? []).find((l) => l.owner_id === me?.id);
+  if (!myLeague) {
+    r = await fn('league', { action: 'create', name: 'Hosted Check League' });
+    myLeague = (await json(r))?.league;
+    check('league created through the Edge Function', r.status === 201, String(r.status));
+  }
+  if (myLeague) {
+    r = await fn('league', { action: 'create', name: 'Second Check League' });
+    check('one open league per runner', r.status === 409, String(r.status));
+    r = await call(`/rest/v1/leagues?select=id&id=eq.${myLeague.id}`, { token });
+    check('the owner can see their league', ((await json(r)) ?? []).length === 1, String(r.status));
+    r = await call(`/rest/v1/leagues?select=*&id=eq.${myLeague.id}`, { token });
+    check('select=* on leagues is refused (some columns are never shown)', r.status === 401 || r.status === 403, String(r.status));
+    r = await fn('league-invite', { action: 'create', league_id: myLeague.id });
+    const inviteCode = (await json(r))?.invite?.code;
+    check('the owner makes an invite code', r.status === 201 && /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{10}$/.test(inviteCode ?? ''), String(r.status));
+    r = await call(`/rest/v1/invite_codes?select=code&league_id=eq.${myLeague.id}`, { token });
+    check('the owner can see the code', ((await json(r)) ?? []).length === 1, String(r.status));
+    r = await fn('league-join', { code: inviteCode?.toLowerCase() });
+    check('joining your own league reports already a member', (await json(r))?.status === 'already_member', String(r.status));
+    r = await fn('league-join', { code: 'ABCDEFGHJK' });
+    check('a wrong code gets the standard refusal', r.status === 404 && (await json(r))?.error?.code === 'invalid_code', String(r.status));
+    r = await fn('league-member', { action: 'remove', league_id: myLeague.id, user_id: me?.id });
+    check('the owner cannot remove themselves', r.status === 400, String(r.status));
+    const stranger = crypto.randomUUID();
+    r = await fn('league', { action: 'update', league_id: stranger, name: 'Ghost League' });
+    check("a league you are not in gets 'not found'", r.status === 404, String(r.status));
+    r = await call('/rest/v1/rpc/league_standings', { method: 'POST', token, body: { p_league_id: stranger } });
+    check('standings for a league you are not in are empty', r.status === 200 && ((await json(r)) ?? []).length === 0, String(r.status));
+    r = await call('/rest/v1/rpc/join_league', { method: 'POST', token, body: { p_user_id: me?.id, p_code: inviteCode } });
+    check('the server-only join function cannot be called directly', r.status >= 400, String(r.status));
+    r = await fn('league-invite', { action: 'revoke', league_id: myLeague.id });
+    check('the code is stopped again', (await json(r))?.revoked === true, String(r.status));
+    r = await fn('league-join', { code: inviteCode });
+    check('a stopped code is refused', r.status === 404, String(r.status));
+    for (const path of [`/rest/v1/leagues?select=id&id=eq.${myLeague.id}`, `/rest/v1/league_members?select=user_id&league_id=eq.${myLeague.id}`]) {
+      const visitor = await call(path);
+      check(`signed-out visitors cannot read ${path.split('?')[0].split('/').pop()}`, visitor.status === 401 || visitor.status === 403, String(visitor.status));
+    }
+  }
+
   // Sign-out must kill the token everywhere at once (migration 4).
   r = await call('/rest/v1/profiles?select=id&limit=1', { token });
   const sawBefore = (await json(r))?.length ?? 0;

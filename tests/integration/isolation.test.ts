@@ -174,7 +174,18 @@ describe('A cannot touch rate limits or run server-only functions', () => {
   test('the API lists only the allow-listed routes to a signed-in user', async () => {
     const r = await api('/rest/v1/', { token: A.token, headers: { Accept: 'application/openapi+json' } });
     assert.equal(r.status, 200);
-    assert.deepEqual(Object.keys(r.json.paths).sort(), ['/', '/profiles', '/rpc/get_my_profile']);
+    // Server-only functions (create_league, join_league and so on) must never
+    // appear here: signed-in users cannot run them.
+    assert.deepEqual(Object.keys(r.json.paths).sort(), [
+      '/',
+      '/invite_codes',
+      '/league_members',
+      '/leagues',
+      '/profiles',
+      '/rpc/get_my_profile',
+      '/rpc/league_standings',
+      '/seasons',
+    ]);
   });
 });
 

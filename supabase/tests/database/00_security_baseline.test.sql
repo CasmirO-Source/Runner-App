@@ -35,8 +35,11 @@ select set_eq(
     where c.relkind in ('r', 'p') and r.rolname = 'postgres' and c.relpersistence <> 't'
       and n.nspname <> 'supabase_migrations'
   $$,
-  array['public.profiles', 'private.rate_limits'],
-  'only the milestone 1 tables exist'
+  array[
+    'public.profiles', 'private.rate_limits',
+    'public.seasons', 'public.leagues', 'public.league_members', 'public.invite_codes', 'private.audit_log'
+  ],
+  'only the milestone 1 and 2 tables exist'
 );
 
 -- 2. Signed-out users (anon) have no table or column access at all.
@@ -85,7 +88,25 @@ select set_eq(
     'service_role INSERT public.profiles.over_18',
     'service_role UPDATE public.profiles.display_name',
     'service_role UPDATE public.profiles.avatar_id',
-    'service_role UPDATE public.profiles.home_city'
+    'service_role UPDATE public.profiles.home_city',
+    'authenticated SELECT public.seasons.id',
+    'authenticated SELECT public.seasons.month',
+    'authenticated SELECT public.seasons.starts_at',
+    'authenticated SELECT public.seasons.ends_at',
+    'authenticated SELECT public.leagues.id',
+    'authenticated SELECT public.leagues.name',
+    'authenticated SELECT public.leagues.owner_id',
+    'authenticated SELECT public.leagues.verified_only',
+    'authenticated SELECT public.leagues.member_limit',
+    'authenticated SELECT public.leagues.created_at',
+    'authenticated SELECT public.league_members.league_id',
+    'authenticated SELECT public.league_members.user_id',
+    'authenticated SELECT public.league_members.role',
+    'authenticated SELECT public.league_members.joined_at',
+    'authenticated SELECT public.invite_codes.league_id',
+    'authenticated SELECT public.invite_codes.code',
+    'authenticated SELECT public.invite_codes.created_at',
+    'authenticated SELECT public.invite_codes.expires_at'
   ],
   'column-level grants are exactly as intended (signed-in users see public fields only)'
 );
@@ -117,7 +138,17 @@ select set_eq(
     'public.get_my_profile authenticated',
     'public.consume_rate_limit service_role',
     'private.display_name_is_clean service_role',
-    'private.session_is_active authenticated'
+    'private.session_is_active authenticated',
+    'private.is_league_member authenticated',
+    'private.is_league_owner authenticated',
+    'public.league_standings authenticated',
+    'public.create_league service_role',
+    'public.update_league service_role',
+    'public.create_invite_code service_role',
+    'public.revoke_invite_code service_role',
+    'public.join_league service_role',
+    'public.leave_league service_role',
+    'public.remove_league_member service_role'
   ],
   'functions are runnable only by the roles that need them'
 );
@@ -159,8 +190,13 @@ select set_eq(
     where n.nspname in ('public', 'private') and p.prosecdef
       and not (n.nspname = 'public' and p.proname = 'rls_auto_enable')
   $$,
-  array['public.get_my_profile', 'public.consume_rate_limit', 'private.session_is_active'],
-  'only the three reviewed functions run with raised privileges'
+  array[
+    'public.get_my_profile', 'public.consume_rate_limit', 'private.session_is_active',
+    'private.is_league_member', 'private.is_league_owner',
+    'public.create_league', 'public.update_league', 'public.create_invite_code', 'public.revoke_invite_code',
+    'public.join_league', 'public.leave_league', 'public.remove_league_member'
+  ],
+  'only the reviewed functions run with raised privileges'
 );
 
 -- Every rule for signed-in users requires a live session, so a token from a
@@ -193,6 +229,21 @@ select is_empty(
       )
   $$,
   'Supabase''s rls_auto_enable (hosted only) is an event trigger with a pinned search_path that no API role can run'
+);
+
+-- Every raised-privilege function the server may run checks its caller, so a
+-- grant made by mistake to another role would still be refused.
+select is_empty(
+  $$
+    select n.nspname || '.' || p.proname
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname in ('public', 'private')
+      and p.prosecdef
+      and has_function_privilege('service_role', p.oid, 'execute')
+      and p.prosrc not like '%private.require_server()%'
+      and p.prosrc not like '%auth.jwt() ->> ''role''%'
+  $$,
+  'every raised-privilege server function checks that the caller is the server'
 );
 
 -- 8. The private schema is closed to app users.
@@ -233,7 +284,12 @@ select is_empty(
 );
 select is_empty($$ select id from storage.buckets $$, 'no storage buckets exist');
 
--- 11. The rate-limit cleanup job is scheduled.
+-- 11. Scheduled jobs: rate-limit cleanup and season creation.
+select results_eq(
+  $$ select schedule, command from cron.job where jobname = 'ensure-seasons' $$,
+  $$ values ('5 0 * * *'::text, 'select private.ensure_seasons()'::text) $$,
+  'daily season job is scheduled'
+);
 select results_eq(
   $$ select schedule, command from cron.job where jobname = 'rate-limits-cleanup' $$,
   $$ values ('17 3 * * *'::text, 'delete from private.rate_limits where window_start < now() - interval ''2 days'''::text) $$,
