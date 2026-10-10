@@ -38,9 +38,9 @@ select set_eq(
   array[
     'public.profiles', 'private.rate_limits',
     'public.seasons', 'public.leagues', 'public.league_members', 'public.invite_codes', 'private.audit_log',
-    'public.runs'
+    'public.runs', 'private.screenshot_hashes'
   ],
-  'only the milestone 1 to 3 tables exist'
+  'only the milestone 1 to 4 tables exist'
 );
 
 -- 2. Signed-out users (anon) have no table or column access at all.
@@ -159,7 +159,9 @@ select set_eq(
     'public.leave_league service_role',
     'public.remove_league_member service_role',
     'public.record_run service_role',
-    'public.league_runs authenticated'
+    'public.league_runs authenticated',
+    'public.save_screenshot_reading service_role',
+    'public.confirm_screenshot_reading service_role'
   ],
   'functions are runnable only by the roles that need them'
 );
@@ -206,7 +208,8 @@ select set_eq(
     'private.is_league_member', 'private.is_league_owner',
     'public.create_league', 'public.update_league', 'public.create_invite_code', 'public.revoke_invite_code',
     'public.join_league', 'public.leave_league', 'public.remove_league_member',
-    'public.record_run', 'public.league_standings', 'public.league_runs'
+    'public.record_run', 'public.league_standings', 'public.league_runs',
+    'public.save_screenshot_reading', 'public.confirm_screenshot_reading'
   ],
   'only the reviewed functions run with raised privileges'
 );
@@ -296,7 +299,8 @@ select is_empty(
 );
 select is_empty($$ select id from storage.buckets $$, 'no storage buckets exist');
 
--- 11. Scheduled jobs: rate-limit cleanup and season creation.
+-- 11. Scheduled jobs: rate-limit cleanup, season creation and deleting
+-- unconfirmed screenshot readings.
 select results_eq(
   $$ select schedule, command from cron.job where jobname = 'ensure-seasons' $$,
   $$ values ('5 0 * * *'::text, 'select private.ensure_seasons()'::text) $$,
@@ -306,6 +310,12 @@ select results_eq(
   $$ select schedule, command from cron.job where jobname = 'rate-limits-cleanup' $$,
   $$ values ('17 3 * * *'::text, 'delete from private.rate_limits where window_start < now() - interval ''2 days'''::text) $$,
   'daily rate-limit cleanup job is scheduled'
+);
+
+select results_eq(
+  $$ select schedule, command from cron.job where jobname = 'screenshot-readings-cleanup' $$,
+  $$ values ('*/15 * * * *'::text, 'delete from private.screenshot_hashes where status = ''pending'' and expires_at < now()'::text) $$,
+  'unconfirmed screenshot readings are deleted every 15 minutes'
 );
 
 select * from finish();

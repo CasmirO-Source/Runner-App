@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { LogResult, MateRun, MyRun } from '@/types/run';
+import type { ConfirmResult, LogResult, MateRun, MyRun, Reading } from '@/types/run';
 
 import { fromFunctionError, NETWORK_ERROR } from './errors';
 import type { Result } from './profile';
@@ -26,6 +26,27 @@ export async function listLeagueRuns(leagueId: string): Promise<Result<MateRun[]
 // Runs are only ever written through the run-manual Edge Function.
 export async function logManualRun(input: { started_at: string; distance_m: number; duration_s: number }): Promise<Result<LogResult>> {
   const { data, error } = await supabase.functions.invoke<LogResult>('run-manual', { body: input });
+  if (error || !data) return { ok: false, error: await fromFunctionError(error) };
+  return { ok: true, data };
+}
+
+// Sends a prepared screenshot (JPEG, as base64) to be read. Nothing is saved
+// as a run until the runner confirms.
+export async function readScreenshot(imageBase64: string): Promise<Result<Reading>> {
+  const { data, error } = await supabase.functions.invoke<{ reading: Reading }>('screenshot-read', { body: { image: imageBase64 } });
+  if (error || !data) return { ok: false, error: await fromFunctionError(error) };
+  return { ok: true, data: data.reading };
+}
+
+// Confirms a reading with the values the runner checked. The server decides
+// what kind of run it becomes.
+export async function confirmReading(input: {
+  reading_id: string;
+  started_at: string;
+  distance_m: number;
+  duration_s: number;
+}): Promise<Result<ConfirmResult>> {
+  const { data, error } = await supabase.functions.invoke<ConfirmResult>('screenshot-confirm', { body: input });
   if (error || !data) return { ok: false, error: await fromFunctionError(error) };
   return { ok: true, data };
 }

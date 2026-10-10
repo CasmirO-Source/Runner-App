@@ -5,7 +5,7 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { useLoad } from '@/hooks/useLoad';
-import { formatDuration, formatKm, formatPace, reasonText, shortDay, weekTotals } from '@/lib/runs';
+import { formatDuration, formatKm, formatPace, reasonText, shortDay, sourceLabel, weekTotals } from '@/lib/runs';
 import { space, stroke } from '@/theme/tokens';
 import { useColours } from '@/theme/useTheme';
 
@@ -61,7 +61,7 @@ export default function ActivityTab() {
               </Text>
             </View>
             <Text variant="caption" colour="textSecondary" tabular>
-              {`${formatDuration(r.duration_s)}  ${formatPace(r.distance_m, r.duration_s)}  ${r.source === 'health' ? 'Verified' : 'Typed in'}`}
+              {`${formatDuration(r.duration_s)}  ${formatPace(r.distance_m, r.duration_s)}  ${sourceLabel(r.source)}`}
             </Text>
             {r.status === 'flagged' ? (
               <Text variant="caption" colour="danger">

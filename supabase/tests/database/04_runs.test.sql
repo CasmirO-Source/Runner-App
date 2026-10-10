@@ -61,8 +61,8 @@ select throws_ok($$ select * from pg_temp.manual('R1', now() - interval '1 hour'
 select set_config('request.jwt.claims', '', true);
 select throws_ok($$ select * from pg_temp.manual('R1', now() - interval '1 hour', 5000, 1500) $$, '42501', null, 'no token: refused');
 select pg_temp.as_server();
-select throws_ok($$ select * from public.record_run(pg_temp.id('R1'), 'screenshot', now(), 5000, 1500, null, null, null) $$,
-  'P0001', 'invalid_run', 'unknown sources are refused (screenshots arrive in milestone 4)');
+select throws_ok($$ select * from public.record_run(pg_temp.id('R1'), 'strava', now(), 5000, 1500, null, null, null) $$,
+  'P0001', 'invalid_run', 'unknown sources are refused');
 select throws_ok($$ select * from public.record_run(pg_temp.id('R1'), null, now(), 5000, 1500, null, null, null) $$,
   'P0001', 'invalid_run', 'a missing source is refused');
 

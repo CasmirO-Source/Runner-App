@@ -14,8 +14,9 @@ import { space } from '@/theme/tokens';
 
 type Outcome = { kind: 'accepted'; metres: number } | { kind: 'flagged'; reasons: string[] };
 
-// Run tab (centre): log a run. Manual entry for now; syncing from Apple
-// Health and Health Connect, and screenshots (milestone 4), join here later.
+// Run tab (centre): log a run. Read a screenshot from any running app
+// (milestone 4) or type it in. Syncing from Apple Health and Health Connect
+// joins here with the development build (milestone 3, parked).
 export default function RunTab() {
   const [days] = useState(() => dayOptions());
   const [day, setDay] = useState(0);
@@ -55,7 +56,10 @@ export default function RunTab() {
   return (
     <Screen>
       <Text variant="title">Log a run</Text>
-      <Text colour="textSecondary">Typed-in runs count in friend leagues, but not in verified-only leagues.</Text>
+      <Button label="Read a screenshot" onPress={() => router.push('/screenshot')} accessibilityHint="Pick a screenshot of a run from any running app" />
+
+      <Text variant="heading">Or type it in</Text>
+      <Text colour="textSecondary">Typed-in and screenshot runs count in friend leagues, but not in verified-only leagues.</Text>
 
       <View style={styles.field}>
         <Text variant="label">Day</Text>

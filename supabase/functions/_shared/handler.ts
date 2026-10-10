@@ -8,8 +8,9 @@ import { log } from './log.ts';
 import { ANY_FUNCTION_PER_IP, ANY_FUNCTION_PER_USER, enforceRateLimit, type RateLimit } from './rateLimit.ts';
 import { supabaseAdmin } from './supabaseAdmin.ts';
 
-// Largest request body accepted. Real requests are a few hundred bytes.
-const MAX_BODY_BYTES = 8 * 1024;
+// Largest request body accepted by default. Real requests are a few hundred
+// bytes. A function that needs more (the screenshot reader) says so itself.
+const DEFAULT_MAX_BODY_BYTES = 8 * 1024;
 
 export type HandlerContext<T> = {
   userId: string;
@@ -24,6 +25,8 @@ type Options<S extends z.ZodType> = {
   schema: S;
   // Extra per-user limits for this function, on top of the global ones.
   limits?: RateLimit[];
+  // Largest body this function accepts, in bytes. Defaults to 8 KB.
+  maxBodyBytes?: number;
   handle: (ctx: HandlerContext<z.output<S>>) => Promise<HandlerResult>;
 };
 
@@ -58,7 +61,7 @@ export function createHandler<S extends z.ZodType>(options: Options<S>) {
         await enforceRateLimit(admin, rule, userId);
       }
 
-      const input = await parseBody(req, options.schema);
+      const input = await parseBody(req, options.schema, options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES);
       const result = await options.handle({ userId, input, admin });
       return json(result.status, result.body);
     } catch (err) {
@@ -89,19 +92,16 @@ export function createHandler<S extends z.ZodType>(options: Options<S>) {
   };
 }
 
-async function parseBody<S extends z.ZodType>(req: Request, schema: S): Promise<z.output<S>> {
+async function parseBody<S extends z.ZodType>(req: Request, schema: S, maxBytes: number): Promise<z.output<S>> {
   const type = req.headers.get('Content-Type') ?? '';
   if (!type.toLowerCase().startsWith('application/json')) {
     throw new HttpError(415, 'unsupported_media_type', 'That request was not in the right format.');
   }
   const declared = Number(req.headers.get('Content-Length') ?? '0');
-  if (declared > MAX_BODY_BYTES) {
+  if (declared > maxBytes) {
     throw new HttpError(413, 'too_large', 'That request was too large.');
   }
-  const text = await req.text();
-  if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) {
-    throw new HttpError(413, 'too_large', 'That request was too large.');
-  }
+  const text = await readCapped(req, maxBytes);
 
   let raw: unknown;
   try {
@@ -124,4 +124,31 @@ async function parseBody<S extends z.ZodType>(req: Request, schema: S): Promise<
     throw new HttpError(400, 'invalid_input', 'Some details need fixing.', {}, fields);
   }
   return parsed.data;
+}
+
+// Reads the body piece by piece and stops as soon as it passes the cap, so a
+// sender who leaves out Content-Length (or lies in it) cannot make the
+// function hold an oversized body in memory.
+async function readCapped(req: Request, maxBytes: number): Promise<string> {
+  if (!req.body) return '';
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      throw new HttpError(413, 'too_large', 'That request was too large.');
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
 }

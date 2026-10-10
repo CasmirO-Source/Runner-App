@@ -108,3 +108,50 @@ export function ordinal(n: number): string {
   if (tens >= 11 && tens <= 13) return `${n}th`;
   return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 }
+
+// How a run was logged, in words. Only Health runs are verified.
+export function sourceLabel(source: string): string {
+  if (source === 'health') return 'Verified';
+  if (source === 'screenshot') return 'Screenshot';
+  return 'Typed in';
+}
+
+// The instant at hh:mm UK time on a UK calendar date ("2026-10-09"). The
+// screenshot reader reports dates and times as the screenshot shows them, and
+// the server reads them as UK time, whatever time zone the phone is in.
+export function ukInstant(date: string, clock: { h: number; m: number }): string {
+  const [y, mo, d] = date.split('-').map(Number);
+  const wanted = Date.UTC(y, mo - 1, d, clock.h, clock.m);
+  // Start from the same wall time in UTC, then correct by the UK offset at
+  // that moment. Twice, so the answer is right next to a clock change.
+  let guess = wanted;
+  for (let i = 0; i < 2; i++) guess = wanted - ukOffsetMs(guess);
+  return new Date(guess).toISOString();
+}
+
+function ukOffsetMs(at: number): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(at));
+  const n = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return Date.UTC(n('year'), n('month') - 1, n('day'), n('hour'), n('minute')) - Math.floor(at / 60000) * 60000;
+}
+
+// "2026-10-09" as "Fri 9 Oct", without time zone surprises.
+export function dateLabel(date: string): string {
+  const [y, mo, d] = date.split('-').map(Number);
+  return shortDay(new Date(y, mo - 1, d));
+}
+
+// Which of the day options (today and the 7 before) is this calendar date, or
+// -1 if it is further back.
+export function dayIndex(options: { date: Date }[], date: string): number {
+  const [y, mo, d] = date.split('-').map(Number);
+  return options.findIndex((o) => o.date.getFullYear() === y && o.date.getMonth() === mo - 1 && o.date.getDate() === d);
+}
