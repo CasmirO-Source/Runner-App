@@ -1,16 +1,17 @@
 // Runs the integration tests against the local Supabase stack.
 //   1. Reads the local stack's URLs and keys from `supabase status` into the
 //      test process's environment. They are never printed or written to disk.
-//   2. Uses the Edge Function server if one is already running (for example
-//      while you test the app on a phone). Otherwise starts one, waits until it
-//      answers, and stops it again at the end.
+//   2. Starts its own Edge Function server (replacing the one the local stack
+//      runs by default), waits until it is serving, and stops it at the end.
+//      Pass --reuse-server to use a server that is already running instead
+//      (for example while you test the app on a phone); the screenshot tests
+//      are then skipped, because that server has no fake Claude address.
 //   3. Runs tests/integration one file at a time.
 //   4. The screenshot reader never calls the real Claude API in tests. A
 //      function server started here gets a made-up key and the address of a
 //      fake Claude server that the screenshot tests run on this machine
 //      (FAKE_CLAUDE_PORT). The functions accept that address only on the local
-//      stack. A server that was already running has neither, so the
-//      screenshot tests are skipped, with a note.
+//      stack.
 // Refuses to run unless the API is on this machine.
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -70,10 +71,13 @@ async function waitForFunctions() {
 }
 
 const FAKE_CLAUDE_PORT = '54398';
+const args = process.argv.slice(2);
+const reuse = args.includes('--reuse-server');
 let server = null;
 let envDir = null;
-if (await functionsUp()) {
-  console.log('Using the Edge Function server that is already running. Screenshot tests need a server started by this script, so they will be skipped.');
+let serving = Promise.resolve();
+if (reuse) {
+  console.log('Reusing the running Edge Function server. Screenshot tests will be skipped.');
 } else {
   // Placeholder values only, in a throwaway folder outside the repository.
   envDir = mkdtempSync(join(tmpdir(), 'runner-functions-'));
@@ -83,7 +87,23 @@ if (await functionsUp()) {
     `ANTHROPIC_API_KEY=local-test-key-not-real\nSCREENSHOT_READER_TEST_URL=http://host.docker.internal:${FAKE_CLAUDE_PORT}\n`,
   );
   testEnv.FAKE_CLAUDE_PORT = FAKE_CLAUDE_PORT;
-  server = spawn('npx', ['supabase', 'functions', 'serve', '--env-file', envFile], { env: testEnv, stdio: 'ignore', detached: true });
+  server = spawn('npx', ['supabase', 'functions', 'serve', '--env-file', envFile], {
+    env: testEnv,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true,
+  });
+  // The stack may already be serving functions without the test settings, so
+  // answering requests is not enough: wait until this server says it is up.
+  serving = new Promise((resolve, reject) => {
+    let seen = '';
+    const watch = (chunk) => {
+      seen = (seen + chunk.toString()).slice(-4096);
+      if (seen.includes('Serving functions on')) resolve();
+    };
+    server.stdout.on('data', watch);
+    server.stderr.on('data', watch);
+    server.on('exit', () => reject(new Error('The Edge Function server stopped while starting.')));
+  });
 }
 const stopServer = () => {
   if (envDir) rmSync(envDir, { recursive: true, force: true });
@@ -97,10 +117,15 @@ const stopServer = () => {
 
 let code = 1;
 try {
+  await Promise.race([
+    serving,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Edge Functions did not start within 3 minutes.')), 180_000)),
+  ]);
   await waitForFunctions();
   // A file pattern rather than a folder: Node 24 (used in CI) does not accept a
   // folder here, Node 26 does.
-  const files = process.argv.slice(2).length ? process.argv.slice(2) : ['tests/integration/**/*.test.ts'];
+  const named = args.filter((a) => a !== '--reuse-server');
+  const files = named.length ? named : ['tests/integration/**/*.test.ts'];
   const run = spawn(process.execPath, ['--test', '--test-concurrency=1', ...files], { env: testEnv, stdio: 'inherit' });
   code = await new Promise((resolve) => run.on('exit', (c) => resolve(c ?? 1)));
 } catch (error) {

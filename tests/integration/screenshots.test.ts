@@ -10,7 +10,10 @@ import { brightening, darkening, FakeClaude, JPEG, jpegSize, jpegWithExif, png }
 import { callFunction, createRunner, deleteUsers, resetRateLimits, sql, type TestUser } from './helpers.ts';
 
 const port = Number(process.env.FAKE_CLAUDE_PORT ?? '0');
-const skip = port ? false : 'needs the function server started by npm run test:integration (with the fake Claude address)';
+// Skipped only on a developer's machine with --reuse-server. In CI a missing
+// fake address fails the run instead, so these tests can never be silently
+// skipped there.
+const skip = port || process.env.CI ? false : 'needs the function server started by npm run test:integration (with the fake Claude address)';
 
 const fake = new FakeClaude();
 let A: TestUser;
@@ -40,6 +43,7 @@ const run = (date: string, km: number, seconds: number, start: string | null = n
 
 before(async () => {
   if (skip) return;
+  if (!port) throw new Error('FAKE_CLAUDE_PORT is not set: the screenshot tests cannot run.');
   await fake.start(port);
   resetRateLimits();
   [A, B, C] = [await createRunner('shotA'), await createRunner('shotB'), await createRunner('shotC')];
