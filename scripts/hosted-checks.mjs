@@ -3,7 +3,8 @@
 //   * CORS: no wildcard "any website" header on the Edge Function.
 //   * Per-IP limit on sign-in code requests.
 //   * Realtime public channels switched off.
-// Plus spot checks that the migrations and settings arrived.
+// Plus spot checks that the migrations and settings arrived, and the
+// screenshot reader's kill switch (milestone 4).
 //
 // Uses only the public URL and publishable key from .env (never a secret).
 // Run it yourself in a terminal: it emails you a sign-in code (or, while the
@@ -20,6 +21,8 @@
 // whatever rate is configured; the configured rate is how fast the bucket
 // refills. So the checks keep sending until refused, up to 35 requests.
 import { createInterface } from 'node:readline/promises';
+import { Buffer } from 'node:buffer';
+import { crc32, deflateSync } from 'node:zlib';
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -53,6 +56,26 @@ const call = (path, { method = 'GET', token, body, headers = {} } = {}) =>
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 const json = async (r) => r.json().catch(() => null);
+
+// A 64 by 64 greyscale gradient as a real PNG, built here so the check needs
+// no image files.
+function gradientPng() {
+  const chunk = (type, data) => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(data.length, 0);
+    head.write(type, 4, 'ascii');
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(crc32(Buffer.concat([Buffer.from(type, 'ascii'), data])), 0);
+    return Buffer.concat([head, data, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(64, 0);
+  ihdr.writeUInt32BE(64, 4);
+  ihdr[8] = 8;
+  const rows = Buffer.alloc(65 * 64);
+  for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) rows[y * 65 + 1 + x] = x * 4;
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(rows)), chunk('IEND', Buffer.alloc(0))]);
+}
 const allowsAnySite = (r) => r.headers.get('access-control-allow-origin') === '*' || r.headers.get('access-control-allow-origin') === 'https://evil.example';
 
 async function realtimeSubscribe(token) {
@@ -262,6 +285,29 @@ if (token) {
   check("runs for a league you are not in are empty", r.status === 200 && ((await json(r)) ?? []).length === 0, String(r.status));
   const visitorRuns = await call('/rest/v1/runs?select=id');
   check('signed-out visitors cannot read runs', visitorRuns.status === 401 || visitorRuns.status === 403, String(visitorRuns.status));
+
+  // Screenshot reader (milestone 4). Sends a plain grey gradient, which is
+  // not a run, so nothing is saved. Before the Anthropic key is set the
+  // reader must say it is switched off (the kill switch); after, the image
+  // must get through the checks and cleaning on the hosted runtime and come
+  // back as "not a run". Manual entry was checked above either way.
+  console.log('\nScreenshot checks');
+  r = await fn('screenshot-read', { image: gradientPng().toString('base64') });
+  const readReply = await json(r);
+  const readerOff = r.status === 503 && readReply?.error?.code === 'reader_off';
+  if (readerOff) {
+    check('with no Anthropic key the reader is switched off and offers manual entry', /Type your run in instead/.test(readReply.error.message ?? ''), readReply.error.code);
+  } else {
+    check('with the key set, a picture that is not a run is cleaned, read and refused', r.status === 422 && readReply?.error?.code === 'not_a_run', `${r.status} ${readReply?.error?.code ?? ''}`);
+    r = await fn('screenshot-read', { image: Buffer.from('GIF89a\x01\x00\x01\x00\x00\x00\x00;', 'latin1').toString('base64') });
+    check('a GIF is refused by its contents', r.status === 415 && (await json(r))?.error?.code === 'unsupported_image', String(r.status));
+  }
+  r = await fn('screenshot-confirm', { reading_id: crypto.randomUUID(), started_at: ago(2), distance_m: 5000, duration_s: 1500 });
+  check('confirming a reading that is not yours (or does not exist) is refused', r.status === 404 && (await json(r))?.error?.code === 'reading_unavailable', String(r.status));
+  r = await fn('screenshot-confirm', { reading_id: crypto.randomUUID(), started_at: ago(2), distance_m: 5000, duration_s: 1500, source: 'screenshot' });
+  check('the app cannot add fields to a confirmation', r.status === 400, String(r.status));
+  r = await call('/rest/v1/rpc/save_screenshot_reading', { method: 'POST', token, body: { p_user_id: me?.id, p_dhash: 1, p_distance_m: 5000, p_duration_s: 1500, p_run_date: '2026-01-01', p_start_time: null, p_source_app: null } });
+  check('the server-only reading functions cannot be called directly', r.status >= 400, String(r.status));
 
   // Sign-out must kill the token everywhere at once (migration 4).
   r = await call('/rest/v1/profiles?select=id&limit=1', { token });
