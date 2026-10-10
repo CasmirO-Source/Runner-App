@@ -117,7 +117,7 @@ A runner who records runs in any app (including Strava, whose API terms forbid s
   - that manual entry still works while the reader is down.
 
 **Still to do for milestone 4:**
-3. **App:** a "Read a screenshot" button on the Run tab (`expo-image-picker`, photo library only, no camera), conversion to JPEG and resizing on the phone (`expo-image-manipulator`, which also turns iPhone HEIC files into JPEG), a confirm screen, "Wrong? Type it in", and asking for the start time when the screenshot has none.
+3. **App (built, waiting for a phone check):** a "Read a screenshot" button on the Run tab (`expo-image-picker`, photo library only, no camera), conversion to JPEG and resizing on the phone (`expo-image-manipulator`, which also turns iPhone HEIC files into JPEG), a confirm screen, "Wrong? Type it in", and asking for the start time when the screenshot has none.
 4. **Owner setup and hosted checks:**
    - Deploy the migration and functions to dev, and confirm the reader says "switched off" before any key exists.
    - Cas creates an Anthropic account, sets the key with `npx supabase secrets set` (never shared or committed), and sets a monthly spending cap and usage alert.

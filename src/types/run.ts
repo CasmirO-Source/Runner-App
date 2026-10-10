@@ -1,7 +1,10 @@
+// Verified (Health), typed in, or read from a screenshot and confirmed.
+export type RunSource = 'health' | 'manual' | 'screenshot';
+
 // Your own runs, as the database shows them to you (column grants).
 export type MyRun = {
   id: string;
-  source: 'health' | 'manual';
+  source: RunSource;
   started_at: string;
   distance_m: number;
   duration_s: number;
@@ -16,7 +19,7 @@ export type MateRun = {
   display_name: string;
   run_date: string;
   distance_m: number;
-  source: 'health' | 'manual';
+  source: RunSource;
 };
 
 export type LogResult = {
@@ -24,3 +27,20 @@ export type LogResult = {
   run_id: string;
   reasons: string[];
 };
+
+// What the screenshot reader found (screenshot-read). Dates and times are as
+// the screenshot shows them, in UK time. start_time is null when the
+// screenshot does not show one.
+export type Reading = {
+  id: string;
+  expires_at: string;
+  distance_m: number;
+  duration_s: number;
+  date: string;
+  start_time: string | null;
+  source_app: string | null;
+};
+
+// screenshot-confirm: the server decides whether the run was saved as a
+// screenshot run (unchanged) or a typed-in run (changed).
+export type ConfirmResult = LogResult & { saved_as: 'screenshot' | 'manual' };

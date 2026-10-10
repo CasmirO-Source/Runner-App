@@ -28,7 +28,7 @@ Approved by the owner on 10 October 2026, started while milestone 3 is parked.
 |---|---|
 | 1. Migration 7 and database tests | Done: `20261010140000_screenshots.sql`, `05_screenshots.test.sql` (39 tests) |
 | 2. Edge Functions and fake-Claude tests | Done: `screenshot-read`, `screenshot-confirm`, `tests/integration/screenshots.test.ts` (19 tests) |
-| 3. App screens | Next |
+| 3. App screens | Built: "Read a screenshot" on the Run tab, `src/app/screenshot.tsx` (choose, read, check, fix, saved), `src/lib/screenshot.ts` (JPEG, 1568 px). Waiting for a check on the owner's phone, which needs step 4's deploy |
 | 4. Owner setup, hosted deploy, real-model checks | Not started. Before the key is set: deploy and check the reader reports "switched off" |
 | 5. Review | Not started |
 

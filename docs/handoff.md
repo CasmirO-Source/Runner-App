@@ -9,7 +9,7 @@ For a technical overview written for another developer, see `docs/handoff-charle
 1. Open the new Claude Code chat in `~/Runner-App`. Nothing needs uploading: every file is in the repo.
 2. Paste this starter prompt:
 
-   > Read CLAUDE.md, PRD.md (v1.2, in full including Appendices A, B and C), docs/handoff.md, docs/milestone-3-plan.md, docs/milestone-4-plan.md and docs/ui-backlog.md. Milestone 3 is parked; start every reply with the parked reminder. We are on branch m4-screenshots, milestone 4 (screenshot reader). Steps 1 and 2 are done; continue with step 3 (the app screens).
+   > Read CLAUDE.md, PRD.md (v1.2, in full including Appendices A, B and C), docs/handoff.md, docs/milestone-3-plan.md, docs/milestone-4-plan.md and docs/ui-backlog.md. Milestone 3 is parked; start every reply with the parked reminder. We are on branch m4-screenshots, milestone 4 (screenshot reader). Steps 1 to 3 are built; next is step 4 (deploy to dev, then the owner's Anthropic key).
 
 3. Before testing: start Docker Desktop, then run `npx supabase start` in `~/Runner-App`. The Docker CLI is at `~/.docker/bin`; the npm scripts add it to PATH themselves.
 
@@ -20,7 +20,7 @@ For a technical overview written for another developer, see `docs/handoff-charle
 | M1 Foundations | Done, merged to `main` (PR 1) |
 | M2 Leagues | Done, merged to `main` (PR 6) |
 | M3 Runs | Parked. Built, tested, deployed: tab bar, runs table, checks, duplicates, standings, manual entry |
-| M4 Screenshot reader | Steps 1 (database) and 2 (Edge Functions) done and tested; step 3 (app screens) next |
+| M4 Screenshot reader | Steps 1 to 3 built and tested; step 4 (deploy, key, real-model checks) next |
 
 ### Git
 

@@ -13,7 +13,7 @@ import {
   revokeInvite,
 } from '@/api/leagues';
 import { listLeagueRuns } from '@/api/runs';
-import { formatKm, shortDay } from '@/lib/runs';
+import { formatKm, shortDay, sourceLabel } from '@/lib/runs';
 
 import { Button } from './Button';
 import { LinkButton } from './LinkButton';
@@ -150,7 +150,7 @@ export function LeagueView({ leagueId: id, onLeft }: { leagueId: string; onLeft:
                 {`${shortDay(new Date(r.run_date))}  ${r.user_id === profile.id ? 'You' : r.display_name}`}
               </Text>
               <Text variant="bodyStrong" tabular>
-                {`${formatKm(r.distance_m)}${r.source === 'health' ? '' : ' (typed in)'}`}
+                {`${formatKm(r.distance_m)}${r.source === 'health' ? '' : ` (${sourceLabel(r.source).toLowerCase()})`}`}
               </Text>
             </View>
           ))}

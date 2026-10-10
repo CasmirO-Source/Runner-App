@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  dateLabel,
+  dayIndex,
   dayOptions,
   formatDuration,
   formatKm,
@@ -11,7 +13,9 @@ import {
   parseDistanceKm,
   parseDuration,
   reasonText,
+  sourceLabel,
   startTime,
+  ukInstant,
   weekStart,
   weekTotals,
 } from '../../src/lib/runs.ts';
@@ -95,4 +99,29 @@ test('every flag reason has a plain message, with a safe fallback', () => {
     assert.notEqual(reasonText(code), reasonText('unknown_code'));
   }
   assert.ok(!reasonText('too_old').includes(String.fromCharCode(0x2014)));
+});
+
+test('screenshot times are read as UK time, whatever the phone says (summer and winter)', () => {
+  assert.equal(ukInstant('2026-07-15', { h: 7, m: 30 }), '2026-07-15T06:30:00.000Z'); // BST, UTC+1
+  assert.equal(ukInstant('2026-12-01', { h: 7, m: 30 }), '2026-12-01T07:30:00.000Z'); // GMT
+  assert.equal(ukInstant('2026-03-29', { h: 0, m: 30 }), '2026-03-29T00:30:00.000Z'); // before the clocks go forward at 01:00
+  assert.equal(ukInstant('2026-03-29', { h: 9, m: 0 }), '2026-03-29T08:00:00.000Z'); // after
+  assert.equal(ukInstant('2026-10-25', { h: 9, m: 0 }), '2026-10-25T09:00:00.000Z'); // after the clocks go back
+  assert.equal(ukInstant('2026-01-01', { h: 23, m: 59 }), '2026-01-01T23:59:00.000Z');
+});
+
+test('a reading date matches one of the day buttons, or none if older than 7 days', () => {
+  const days = dayOptions(new Date(2026, 9, 10, 12));
+  assert.equal(dayIndex(days, '2026-10-10'), 0);
+  assert.equal(dayIndex(days, '2026-10-09'), 1);
+  assert.equal(dayIndex(days, '2026-10-03'), 7);
+  assert.equal(dayIndex(days, '2026-10-02'), -1);
+  assert.equal(dayIndex(days, '2026-10-11'), -1);
+});
+
+test('reading dates and sources in words', () => {
+  assert.equal(dateLabel('2026-10-09'), 'Fri 9 Oct');
+  assert.equal(sourceLabel('health'), 'Verified');
+  assert.equal(sourceLabel('manual'), 'Typed in');
+  assert.equal(sourceLabel('screenshot'), 'Screenshot');
 });

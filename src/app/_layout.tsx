@@ -67,6 +67,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="league" />
         <Stack.Screen name="join/[code]" />
+        <Stack.Screen name="screenshot" />
       </Stack.Protected>
     </Stack>
   );
