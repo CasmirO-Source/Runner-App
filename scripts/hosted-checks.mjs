@@ -166,7 +166,7 @@ if (token) {
   }
   r = await call('/rest/v1/', { token, headers: { Accept: 'application/openapi+json' } });
   const paths = Object.keys((await json(r))?.paths ?? {}).sort().join(' ');
-  check('the API lists only the allow-listed routes', r.status !== 200 || paths === '/ /invite_codes /league_members /leagues /profiles /rpc/get_my_profile /rpc/league_standings /seasons', paths || String(r.status));
+  check('the API lists only the allow-listed routes', r.status !== 200 || paths === '/ /invite_codes /league_members /leagues /profiles /rpc/get_my_profile /rpc/league_runs /rpc/league_standings /runs /seasons', paths || String(r.status));
   r = await call('/functions/v1/profile', { method: 'POST', token, body: { action: 'update' }, headers: { Origin: 'https://evil.example' } });
   const body = await json(r);
   check('Edge Function answers with its own error format', r.status === 400 && body?.error?.code === 'nothing_to_change', `${r.status} ${body?.error?.code ?? ''}`);

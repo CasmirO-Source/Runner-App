@@ -36,6 +36,8 @@ Ideas and feedback for the app's layout and look. Navigation structure is built 
 - Swiping between tabs needs an extra package (a pager view). Ask before adding.
 - Rounded cards on solid surfaces; no coloured borders (B #5), no glass (B #6), no fade-only presses (B #14).
 
+- Accent colour: the owner considered forest green instead of signal orange (10 October 2026) and chose to keep orange for now and revisit here. A contrast-checked green set exists (light `#1F5C3A` with off-white button text; dark `#4CAF73` with near-black text, `#5DBB82` for green text), with the accent green doubling as "up". Switching needs PRD 13.1 and Appendix B #1 amended, then one tokens edit.
+
 ### Not now, and why
 
 - **Matchmaking against strangers (the Arena):** out of scope for version 1 (PRD section 3; planned for version 2 in section 15). No tile or "coming soon" entry: out-of-scope items are not built, even partially.
