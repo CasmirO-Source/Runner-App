@@ -41,7 +41,7 @@
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
     "supabase": "^2.120.0",
-    "typescript": "~6.0.3"
+    "typescript": "~7.0.2"
   },
   "overrides": {
     "react-dom": "$react"
