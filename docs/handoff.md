@@ -20,7 +20,7 @@ For a technical overview written for another developer, see `docs/handoff-charle
 | M1 Foundations | Done, merged to `main` (PR 1) |
 | M2 Leagues | Done, merged to `main` (PR 6) |
 | M3 Runs | Parked. Built, tested, deployed: tab bar, runs table, checks, duplicates, standings, manual entry |
-| M4 Screenshot reader | Steps 1 to 3 built and tested; step 4 (deploy, key, real-model checks) next |
+| M4 Screenshot reader | Steps 1 to 3 built, tested and deployed to dev. The Anthropic key is on hold (no API credits bought yet, owner decision 10 October 2026), so the reader is switched off on dev |
 
 ### Git
 
