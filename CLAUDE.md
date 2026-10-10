@@ -14,8 +14,11 @@ Standing instructions for every Claude Code session in this repository.
 |---|---|
 | M1 Foundations | Done. Approved by the owner on 10 October 2026. See `docs/milestone-1-review.md`, including its open items |
 | M2 Leagues | Done. Approved by the owner on 10 October 2026. See `docs/milestone-2-review.md` |
-| M3 Runs | In progress. Plan and owner decisions: `docs/milestone-3-plan.md` |
-| M4 to M9 | Not started. Do not build. |
+| M3 Runs | **Parked** (owner decision, 10 October 2026). Built, tested and deployed: tab bar, runs database, checks, duplicates, standings, manual entry. Waiting for an Android phone or the Apple Developer account: development build, Health sync (with history import), Apple and Google sign-in. See `docs/milestone-3-plan.md` |
+| M4 Screenshot reader | In progress (started while M3 is parked, with the owner's approval) |
+| M5 to M9 | Not started. Do not build. |
+
+**Parked milestone reminder (owner instruction):** while any milestone is parked, begin every reply to the owner with a one-line reminder of what is parked and what it is waiting for. Before TestFlight, the parked M3 items must be finished: Apple requires Sign in with Apple, and PRD 5.1 requires Apple and Google sign-in to work before TestFlight.
 
 Update this table when the owner approves a milestone as done.
 

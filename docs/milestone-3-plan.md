@@ -14,6 +14,19 @@ Approved by the owner on 10 October 2026.
 
 Steps 1 to 3 work in Expo Go.
 
+## Status: parked (10 October 2026)
+
+Done, tested and deployed to the dev project: step 1 (tab bar, now five tabs), step 2 (runs database, checks, duplicates, standings, league-mates' runs, 120-day Health rule), step 3 (manual entry, Run and Activity tabs).
+
+Waiting, because there is no Android phone or Apple Developer account yet:
+
+- Step 4: development build with EAS (Android is free with the owner's Expo account; iPhone needs the Apple Developer Program).
+- Step 5: Health sync (Health Connect on Android, Apple Health on iPhone), the health-data consent screen, sync on app open, history import of 120 days, the `run-sync` Edge Function (30 per hour).
+- Step 6: Google sign-in (free Google Cloud setup) and Sign in with Apple (needs the Apple Developer Program). Both must work before TestFlight (PRD 5.1).
+- Step 7: the milestone 3 review.
+
+The owner approved starting milestone 4 meanwhile. Every reply starts with a reminder that milestone 3 is parked.
+
 ## Owner decisions
 
 | # | Topic | Decision |
