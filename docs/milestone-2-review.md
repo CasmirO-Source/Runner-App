@@ -1,6 +1,6 @@
 # Milestone 2 review: Leagues
 
-Status: **ready for owner approval**. Milestone 2 is marked done in `CLAUDE.md` only after the owner approves this review.
+Status: **approved by the owner on 10 October 2026**. Milestone 2 is marked done in `CLAUDE.md`.
 
 - Reviewed: 10 October 2026, branch `m2-leagues`, commit `0dbce98` (plus this document).
 - Development project: `svhdlybvqigqrfwywlib`. Migration 5 and four league functions applied on 10 October 2026.
@@ -45,7 +45,7 @@ Proof the tests catch real mistakes: switching a league access rule to "any sign
 | npm audit gates (app and Edge Function packages) | Pass; the 2 milestone 1 exceptions still apply (review by 9 November 2026) |
 | gitleaks, whole history | No leaks |
 | App bundles, iOS and Android | Build; no source maps; no secret key patterns |
-| CI on GitHub | Not yet run for `m2-leagues` (open item: push the branch) |
+| CI on GitHub | All three jobs pass on `m2-leagues` (run 38010086266) |
 | Supabase security advisor, dev project | 2 new informational findings (section 7) |
 
 ## 4. Appendix A: items milestone 2 touches
@@ -91,7 +91,7 @@ New screens: home (your leagues), start a league, join a league, league (table, 
 | 16 Em dashes | Met: none anywhere (design check, unit test on the share message) |
 | 17 Buzzword copy | Met: plain, specific copy ("3 of 8 places taken", "That code doesn't work. Ask for a new one.") |
 
-**Visual check: open.** Claude has not seen the new screens. The owner screenshots each new screen in light and dark mode and checks it against this table.
+**Visual check: done.** The owner checked every new screen in light and dark mode on 10 October 2026 and approved them. Claude has not seen them.
 
 ## 6. Appendix C: legal checklist
 
@@ -126,8 +126,8 @@ New screens: home (your leagues), start a league, join a league, league (table, 
 
 Before approving milestone 2:
 
-- [ ] Screenshot the new screens in light and dark mode and check them against section 5 (two accounts make it easiest: one starts a league, the other joins).
-- [ ] Push `m2-leagues` so CI runs on GitHub, and confirm all three jobs pass.
+- [x] New screens checked in light and dark mode by the owner.
+- [x] `m2-leagues` pushed; CI passes all three jobs.
 
 Dependabot has opened four pull requests. They need checking before merging, not merging blind:
 
