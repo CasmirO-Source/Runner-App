@@ -53,11 +53,12 @@ async function functionsUp() {
 }
 
 async function waitForFunctions() {
-  for (let i = 0; i < 60; i++) {
+  // Creating the edge runtime container from scratch can take over a minute.
+  for (let i = 0; i < 180; i++) {
     if (await functionsUp()) return;
     await new Promise((r) => setTimeout(r, 1000));
   }
-  throw new Error('Edge Functions did not start within 60 seconds.');
+  throw new Error('Edge Functions did not start within 3 minutes.');
 }
 
 let server = null;
