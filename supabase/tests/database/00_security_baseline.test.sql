@@ -38,9 +38,9 @@ select set_eq(
   array[
     'public.profiles', 'private.rate_limits',
     'public.seasons', 'public.leagues', 'public.league_members', 'public.invite_codes', 'private.audit_log',
-    'public.runs', 'private.screenshot_hashes'
+    'public.runs', 'private.screenshot_hashes', 'public.rating_history'
   ],
-  'only the milestone 1 to 4 tables exist'
+  'only the milestone 1 to 5 tables exist'
 );
 
 -- 2. Signed-out users (anon) have no table or column access at all.
@@ -75,6 +75,10 @@ select set_eq(
     'authenticated SELECT public.profiles.id',
     'authenticated SELECT public.profiles.display_name',
     'authenticated SELECT public.profiles.avatar_id',
+    'authenticated SELECT public.profiles.stride',
+    'authenticated SELECT public.profiles.placement_runs',
+    'service_role SELECT public.profiles.stride',
+    'service_role SELECT public.profiles.placement_runs',
     'service_role SELECT public.profiles.id',
     'service_role SELECT public.profiles.display_name',
     'service_role SELECT public.profiles.avatar_id',
@@ -115,7 +119,17 @@ select set_eq(
     'authenticated SELECT public.runs.duration_s',
     'authenticated SELECT public.runs.status',
     'authenticated SELECT public.runs.flag_reasons',
-    'authenticated SELECT public.runs.created_at'
+    'authenticated SELECT public.runs.created_at',
+    'authenticated SELECT public.rating_history.id',
+    'authenticated SELECT public.rating_history.run_id',
+    'authenticated SELECT public.rating_history.stride',
+    'authenticated SELECT public.rating_history.calculated',
+    'authenticated SELECT public.rating_history.speed_score',
+    'authenticated SELECT public.rating_history.volume_score',
+    'authenticated SELECT public.rating_history.t5_median_s',
+    'authenticated SELECT public.rating_history.weekly_km',
+    'authenticated SELECT public.rating_history.window_days',
+    'authenticated SELECT public.rating_history.created_at'
   ],
   'column-level grants are exactly as intended (signed-in users see public fields only)'
 );
