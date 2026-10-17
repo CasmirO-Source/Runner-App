@@ -1,6 +1,6 @@
 # Milestone 4 review: Screenshot reader
 
-Status: **waiting for the owner's decision** (section 8).
+Status: **approved by the owner on 17 October 2026**, with the open items in section 8 carried forward. Milestone 4 is marked done in `CLAUDE.md`. The two person checks (`check:hosted` with the reader off, and the screen check) had not been reported done at approval, so they stay open; the real-model checks wait for API credits.
 
 - Reviewed: 11 October 2026, branch `m4-screenshots`, commit `0a47085` (plus this document).
 - Development project: `svhdlybvqigqrfwywlib`. Migration 7 and all eight Edge Functions deployed on 10 October 2026.
