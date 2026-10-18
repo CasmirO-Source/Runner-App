@@ -9,7 +9,7 @@ import { displayNameProblem, normaliseDisplayName } from '@/lib/validation';
 
 import { useOnboardingDraft } from '@/hooks/useOnboardingDraft';
 
-// Step 2 of 3: display name. Checked here for quick feedback; the server and
+// Step 2 of 4: display name. Checked here for quick feedback; the server and
 // database decide (rules, word screen, and whether the name is taken).
 export default function NameStep() {
   const { over18, displayName, setDisplayName, nameError, setNameError } = useOnboardingDraft();
@@ -31,12 +31,12 @@ export default function NameStep() {
     }
     setDisplayName(normaliseDisplayName(value));
     setNameError(null);
-    router.push('/onboarding/avatar');
+    router.push('/onboarding/running');
   }
 
   return (
     <Screen>
-      <Text variant="caption" colour="textSecondary">Step 2 of 3</Text>
+      <Text variant="caption" colour="textSecondary">Step 2 of 4</Text>
       <Text variant="title">Pick a name</Text>
       <Text colour="textSecondary">This is what your mates see on the leaderboard. 3 to 20 letters, numbers, spaces or underscores.</Text>
       <TextField

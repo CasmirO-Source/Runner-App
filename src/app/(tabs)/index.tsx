@@ -6,8 +6,9 @@ import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { ListItem } from '@/components/ListItem';
 import { Screen } from '@/components/Screen';
+import { StrideSummary } from '@/components/StrideSummary';
 import { Text } from '@/components/Text';
-import { useAuth } from '@/hooks/useAuth';
+import { useFreshProfile } from '@/hooks/useFreshProfile';
 import { useLoad } from '@/hooks/useLoad';
 import { daysLeftLabel, seasonName, standingLine } from '@/lib/leagues';
 import type { Standing } from '@/types/league';
@@ -27,9 +28,9 @@ async function loadHome() {
 }
 
 // Home tab: your place in each league, the gap to the runner above, and the
-// season countdown (PRD 13.3). Tapping a league opens it in the League tab.
+// season countdown, and your Stride (PRD 13.3). Tapping a league opens it in the League tab.
 export default function Home() {
-  const { profile } = useAuth();
+  const { profile } = useFreshProfile();
   const loaded = useLoad(async () => ({ ok: true as const, data: await loadHome() }));
   if (!profile) return null;
 
@@ -44,6 +45,7 @@ export default function Home() {
         <Avatar avatarId={profile.avatar_id} />
         <Text variant="heading">{profile.display_name}</Text>
       </View>
+      <StrideSummary fields={profile} compact />
 
       <View style={styles.heading}>
         <Text variant="title">Your leagues</Text>

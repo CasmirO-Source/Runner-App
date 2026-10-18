@@ -192,5 +192,33 @@ select results_eq(
   'each runner''s Stride is in the league table'
 );
 
+-- 11. Estimated Stride (PRD 4.5) ---------------------------------------------------------------------
+-- Uses the same formula: the PRD reference runner's answers give 919.
+select pg_temp.as_server();
+insert into auth.users (id, email, aud, role) values ('a5000000-0000-4000-8000-000000000009', 'stride9@example.com', 'authenticated', 'authenticated');
+insert into public.profiles (id, display_name, avatar_id, over_18) values ('a5000000-0000-4000-8000-000000000009', 'Stride Runner 9', 9, true);
+select is(public.set_stride_estimate(pg_temp.id('R9'), 1500, 15), 919::smallint, 'a 25 minute 5 km and 15 km a week estimates 919, the same as the real formula');
+select results_eq($$ select estimate_5k_s, estimate_weekly_km, estimated_stride, stride from public.profiles where id = pg_temp.id('R9') $$,
+  $$ values (1500, 15::smallint, 919::smallint, null::smallint) $$, 'the answers and the estimate are kept; the real Stride stays empty');
+select is(public.set_stride_estimate(pg_temp.id('R9'), null, 10), 125::smallint, '"not sure" about 5 km: volume only (10 km a week gives 125)');
+select is(pg_temp.history_count('R9'), 0, 'an estimate never goes in the rating history');
+select is(pg_temp.placement('R9'), 0::smallint, 'an estimate never counts towards placement');
+select throws_ok($$ select public.set_stride_estimate(pg_temp.id('R9'), 700, 10) $$, 'P0001', 'invalid_estimate', 'a 5 km under 13 minutes is refused');
+select throws_ok($$ select public.set_stride_estimate(pg_temp.id('R9'), 1500, 151) $$, 'P0001', 'invalid_estimate', 'over 150 km a week is refused');
+select throws_ok($$ select public.set_stride_estimate(pg_temp.id('R9'), 1500, null) $$, 'P0001', 'invalid_estimate', 'a 5 km time needs weekly km with it');
+select is(public.set_stride_estimate(pg_temp.id('R9'), null, null), null::smallint, 'an estimate can be cleared');
+select is((select estimated_stride from public.profiles where id = pg_temp.id('R9')), null::smallint, 'and is gone');
+select throws_ok($$ select public.set_stride_estimate(pg_temp.id('R2'), 1500, 15) $$, 'P0001', 'already_placed', 'once placed, an estimate cannot be set');
+-- A high estimate does not hold up the real Stride at placement (no fall limit applies to it).
+select public.set_stride_estimate(pg_temp.id('R9'), 780, 150);
+select pg_temp.health('R9', d, 0, 5000, 1800) from generate_series(1, 3) as d;
+select ok(pg_temp.stride('R9') < 1000, 'at placement the real Stride replaces a boastful estimate completely');
+select is((select estimated_stride from public.profiles where id = pg_temp.id('R9')), 3000::smallint, 'the estimate is kept, to show how it compared');
+select ok(not has_column_privilege('authenticated', 'public.profiles', 'estimate_5k_s', 'SELECT'), 'other runners cannot see the answers');
+select ok(has_column_privilege('authenticated', 'public.profiles', 'estimated_stride', 'SELECT'), 'the estimate itself is public, like a Stride');
+select ok(not has_column_privilege('service_role', 'public.profiles', 'estimated_stride', 'UPDATE'), 'the server can only set an estimate through the function');
+select set_config('request.jwt.claims', json_build_object('role', 'authenticated', 'sub', pg_temp.id('R9'))::text, true);
+select throws_ok($$ select public.set_stride_estimate(pg_temp.id('R9'), 1500, 15) $$, '42501', null, 'a signed-in user cannot set an estimate directly');
+
 select * from finish();
 rollback;

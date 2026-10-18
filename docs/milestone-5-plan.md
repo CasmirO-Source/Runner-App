@@ -1,6 +1,6 @@
 # Milestone 5 plan: Stride rating
 
-Status: **waiting for the owner's approval.** No code until then.
+Status: **approved by the owner on 17 October 2026**, with the estimated Stride added (decision 10, PRD 1.3).
 
 PRD: section 4 (the rating), 4.4 (anti-gaming), 5.2 (tier on the leaderboard), 8.2 (`rating_history`: owner reads, database function writes), 10 (anti-cheat), 11.6 (screenshot runs never affect Stride), 13.3 (Home and You screens), 14 (M5).
 
@@ -89,6 +89,7 @@ The PRD leaves these open. My recommendation comes first in each.
 | 7 | Who sees a runner's Stride? | **Anyone signed in**, like the display name. History: only the runner | PRD 4.1: "shown on every profile and next to names on leaderboards" |
 | 8 | History chart | **Bars drawn from plain views, no new package** | A line chart would need `react-native-svg` (Expo-maintained). Ask again in the design pass if the bars look too plain |
 | 9 | Where the formula lives | **Only in the database** | One source of truth, and clients can never compute or write a rating (PRD 4.4). The app only turns numbers into tier names |
+| 10 | Estimated Stride (owner, 17 October 2026) | **Added (PRD 4.5).** Two answers (recent 5 km time or "not sure", typical weekly km) give an estimate from the same database formula, shown with "est." Answers private, estimate public. Never counts for anything; closed and replaced at placement; "You said Pacer. Your runs say Strider." | Removes the empty "Placing 0 of 3" for new runners without letting self-reports touch the real rating (a boastful estimate would otherwise take weeks to fall at 150 a week) |
 
 ## Tests
 
@@ -122,3 +123,12 @@ The PRD leaves these open. My recommendation comes first in each.
 ## Not in this milestone
 
 Handicap duels and the "unplaced runners cannot duel" rule (milestone 6), the fitness trend chart and race predictions (milestone 7, Pro), Health sync itself (milestone 3, parked), and any nightly recalculation (decision 6).
+
+## Progress
+
+| Step | Status |
+|---|---|
+| 1. Migration 8 (`stride`) and database tests | Done, committed (`9d89412`). 53 tests; four mutation checks caught |
+| Estimated Stride | Built: PRD 1.3, migration 9 (`stride_estimate`, `set_stride_estimate`), profile Edge Function (`estimate` on create, `estimate` action), 17 database tests, integration tests |
+| 2. App | Built: `src/lib/stride.ts`, `StrideSummary`, `StrideChart`, `EstimateForm`, onboarding step 3 of 4 (optional), estimate screen, Home, You and league table tier. 100 unit, 310 database and 135 integration tests pass |
+| 3. Deploy to dev, hosted checks, review | Next |

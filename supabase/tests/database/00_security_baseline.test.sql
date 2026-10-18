@@ -77,6 +77,10 @@ select set_eq(
     'authenticated SELECT public.profiles.avatar_id',
     'authenticated SELECT public.profiles.stride',
     'authenticated SELECT public.profiles.placement_runs',
+    'authenticated SELECT public.profiles.estimated_stride',
+    'service_role SELECT public.profiles.estimate_5k_s',
+    'service_role SELECT public.profiles.estimate_weekly_km',
+    'service_role SELECT public.profiles.estimated_stride',
     'service_role SELECT public.profiles.stride',
     'service_role SELECT public.profiles.placement_runs',
     'service_role SELECT public.profiles.id',
@@ -175,7 +179,8 @@ select set_eq(
     'public.record_run service_role',
     'public.league_runs authenticated',
     'public.save_screenshot_reading service_role',
-    'public.confirm_screenshot_reading service_role'
+    'public.confirm_screenshot_reading service_role',
+    'public.set_stride_estimate service_role'
   ],
   'functions are runnable only by the roles that need them'
 );
@@ -223,7 +228,8 @@ select set_eq(
     'public.create_league', 'public.update_league', 'public.create_invite_code', 'public.revoke_invite_code',
     'public.join_league', 'public.leave_league', 'public.remove_league_member',
     'public.record_run', 'public.league_standings', 'public.league_runs',
-    'public.save_screenshot_reading', 'public.confirm_screenshot_reading'
+    'public.save_screenshot_reading', 'public.confirm_screenshot_reading',
+    'public.set_stride_estimate'
   ],
   'only the reviewed functions run with raised privileges'
 );

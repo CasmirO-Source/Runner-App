@@ -12,7 +12,7 @@ import { space } from '@/theme/tokens';
 
 import { useOnboardingDraft } from '@/hooks/useOnboardingDraft';
 
-// Step 1 of 3: the 18+ check (PRD 5.1, section 12). The date of birth stays
+// Step 1 of 4: the 18+ check (PRD 5.1, section 12). The date of birth stays
 // on this screen: it is checked on the phone, then thrown away. Only "over 18:
 // yes" is ever sent to the server.
 export default function AgeCheck() {
@@ -52,7 +52,7 @@ export default function AgeCheck() {
 
   return (
     <Screen>
-      <Text variant="caption" colour="textSecondary">Step 1 of 3</Text>
+      <Text variant="caption" colour="textSecondary">Step 1 of 4</Text>
       <Text variant="title">When were you born?</Text>
       <Text colour="textSecondary">Runner App is for over-18s. We check your date of birth on your phone and only keep a yes or no.</Text>
       <View style={styles.row}>

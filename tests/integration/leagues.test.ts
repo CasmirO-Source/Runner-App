@@ -102,7 +102,7 @@ describe('Non-members get nothing back from any league query (acceptance)', () =
     assert.deepEqual(m.json.map((r: { user_id: string }) => r.user_id).sort(), [A.id, B.id].sort());
     const s = await api('/rest/v1/rpc/league_standings', { token: B.token, method: 'POST', body: { p_league_id: X } });
     assert.equal(s.json.length, 2);
-    assert.deepEqual(Object.keys(s.json[0]).sort(), ['avatar_id', 'display_name', 'distance_m', 'place', 'run_count', 'user_id']);
+    assert.deepEqual(Object.keys(s.json[0]).sort(), ['avatar_id', 'display_name', 'distance_m', 'estimated_stride', 'place', 'run_count', 'stride', 'user_id']);
   });
 
   test('only the owner can see the invite code', async () => {

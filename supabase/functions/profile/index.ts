@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+import { refusal, type DbError } from '../_shared/dbErrors.ts';
 import { createHandler, type HandlerContext, type HandlerResult } from '../_shared/handler.ts';
 import { HttpError } from '../_shared/http.ts';
+import { log } from '../_shared/log.ts';
 
 // Creates or edits the caller's own profile. The only way a profile can be
 // written (the database gives the app no write access to profiles).
@@ -51,12 +53,29 @@ const homeCity = z.preprocess(
     .nullable(),
 );
 
+// Estimated Stride (PRD 4.5): a recent 5 km time in seconds (13 to 90
+// minutes) or null for "not sure", and typical weekly km (0 to 150). The
+// database checks the same ranges and refuses once the runner is placed.
+const fiveKSeconds = z
+  .number({ error: 'Enter a 5 km time between 13 and 90 minutes.' })
+  .int({ error: 'Enter a 5 km time between 13 and 90 minutes.' })
+  .min(780, { error: 'Enter a 5 km time between 13 and 90 minutes.' })
+  .max(5400, { error: 'Enter a 5 km time between 13 and 90 minutes.' })
+  .nullable();
+const weeklyKm = z
+  .number({ error: 'Enter a weekly distance from 0 to 150 km.' })
+  .int({ error: 'Enter a weekly distance from 0 to 150 km.' })
+  .min(0, { error: 'Enter a weekly distance from 0 to 150 km.' })
+  .max(150, { error: 'Enter a weekly distance from 0 to 150 km.' });
+const estimate = z.strictObject({ five_k_s: fiveKSeconds, weekly_km: weeklyKm });
+
 const createInput = z.strictObject({
   action: z.literal('create'),
   display_name: displayName,
   avatar_id: avatarId,
   home_city: homeCity.optional(),
   over_18: z.literal(true, { error: 'You need to be 18 or over to use the app.' }),
+  estimate: estimate.optional(),
 });
 
 const updateInput = z.strictObject({
@@ -66,10 +85,31 @@ const updateInput = z.strictObject({
   home_city: homeCity.optional(),
 });
 
-const schema = z.discriminatedUnion('action', [createInput, updateInput]);
+// Set, change or clear (null) the estimate. Only until the runner is placed.
+const estimateInput = z.strictObject({
+  action: z.literal('estimate'),
+  estimate: estimate.nullable(),
+});
+
+const schema = z.discriminatedUnion('action', [createInput, updateInput, estimateInput]);
 type Input = z.output<typeof schema>;
 
-const PROFILE_COLUMNS = 'id, display_name, avatar_id, home_city, over_18, created_at, updated_at';
+const PROFILE_COLUMNS =
+  'id, display_name, avatar_id, home_city, over_18, created_at, updated_at, stride, placement_runs, estimate_5k_s, estimate_weekly_km, estimated_stride';
+
+const ESTIMATE_REFUSALS = {
+  already_placed: new HttpError(409, 'already_placed', 'Your Stride comes from your runs now, so the estimate is closed.'),
+  invalid_estimate: new HttpError(400, 'invalid_input', 'Some details need fixing.'),
+  profile_missing: new HttpError(404, 'profile_missing', 'Set up your profile first.'),
+};
+
+function setEstimate(admin: HandlerContext<Input>['admin'], userId: string, value: z.output<typeof estimate> | null) {
+  return admin.rpc('set_stride_estimate', {
+    p_user_id: userId,
+    p_5k_s: value?.five_k_s ?? null,
+    p_weekly_km: value?.weekly_km ?? null,
+  });
+}
 
 // Turns database refusals into messages the user can act on. Matched by
 // constraint name only; the database's own message (which can contain what the
@@ -106,7 +146,26 @@ async function handle({ userId, input, admin }: HandlerContext<Input>): Promise<
       .select(PROFILE_COLUMNS)
       .single();
     if (error) throw fromDatabaseError(error) ?? error;
-    return { status: 201, body: { profile: data } };
+    if (!input.estimate) return { status: 201, body: { profile: data } };
+
+    // The profile exists now, so a failed estimate must not fail sign-up: the
+    // runner can add it later from the You tab.
+    const { error: estimateError } = await setEstimate(admin, userId, input.estimate);
+    if (estimateError) {
+      log('warn', { fn: 'profile', event: 'estimate_not_saved', dbCode: (estimateError as DbError).code });
+      return { status: 201, body: { profile: data } };
+    }
+    const { data: withEstimate, error: readError } = await admin.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).single();
+    if (readError) throw readError;
+    return { status: 201, body: { profile: withEstimate } };
+  }
+
+  if (input.action === 'estimate') {
+    const { error } = await setEstimate(admin, userId, input.estimate);
+    if (error) throw refusal(error as DbError, ESTIMATE_REFUSALS) ?? error;
+    const { data, error: readError } = await admin.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).single();
+    if (readError) throw readError;
+    return { status: 200, body: { profile: data } };
   }
 
   const patch: Record<string, unknown> = {};

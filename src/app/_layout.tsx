@@ -68,6 +68,7 @@ function RootNavigator() {
         <Stack.Screen name="league" />
         <Stack.Screen name="join/[code]" />
         <Stack.Screen name="screenshot" />
+        <Stack.Screen name="estimate" />
       </Stack.Protected>
     </Stack>
   );

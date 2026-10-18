@@ -182,6 +182,7 @@ describe('A cannot touch rate limits or run server-only functions', () => {
       '/league_members',
       '/leagues',
       '/profiles',
+      '/rating_history',
       '/rpc/get_my_profile',
       '/rpc/league_runs',
       '/rpc/league_standings',

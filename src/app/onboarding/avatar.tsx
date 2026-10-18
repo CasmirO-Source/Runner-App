@@ -10,11 +10,11 @@ import { useAuth } from '@/hooks/useAuth';
 
 import { useOnboardingDraft } from '@/hooks/useOnboardingDraft';
 
-// Step 3 of 3: avatar, then the profile is created through the profile Edge
-// Function. If the server rejects the name (taken or not allowed), the user is
+// Step 4 of 4: avatar, then the profile is created through the profile Edge
+// Function, with the estimated Stride answers if given. If the server rejects the name (taken or not allowed), the user is
 // taken back to the name step with the server's message.
 export default function AvatarStep() {
-  const { over18, displayName, setNameError } = useOnboardingDraft();
+  const { over18, displayName, estimate, setNameError } = useOnboardingDraft();
   const { setProfile } = useAuth();
   const [avatarId, setAvatarId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +31,12 @@ export default function AvatarStep() {
     }
     setBusy(true);
     setError(null);
-    const result = await createProfile({ display_name: displayName, avatar_id: avatarId, over_18: true });
+    const result = await createProfile({
+      display_name: displayName,
+      avatar_id: avatarId,
+      over_18: true,
+      ...(estimate ? { estimate } : {}),
+    });
     setBusy(false);
     if (result.ok) {
       // The navigator sees the new profile and opens the app.
@@ -49,7 +54,7 @@ export default function AvatarStep() {
 
   return (
     <Screen>
-      <Text variant="caption" colour="textSecondary">Step 3 of 3</Text>
+      <Text variant="caption" colour="textSecondary">Step 4 of 4</Text>
       <Text variant="title">Pick an avatar</Text>
       <AvatarPicker
         value={avatarId}

@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { MyProfile } from '@/types/profile';
+import type { MyProfile, StrideEstimate } from '@/types/profile';
 
 import { fromFunctionError, NETWORK_ERROR, type AppError } from './errors';
 
@@ -18,6 +18,7 @@ export type CreateProfileInput = {
   display_name: string;
   avatar_id: number;
   over_18: true;
+  estimate?: StrideEstimate;
 };
 
 // Profiles are only ever written through the profile Edge Function. The app
