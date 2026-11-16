@@ -4,7 +4,7 @@ Standing instructions for every Claude Code session in this repository.
 
 ## Before any work
 
-1. Read `PRD.md` in full, including Appendices A, B and C. It is the source of truth. If this file and the PRD disagree, the PRD wins. Point out the conflict to the owner.
+1. Read `PRD.md` completely, including Appendices A, B and C. It is the source of truth. If this file and the PRD disagree, the PRD wins. Point out the conflict to the owner.
 2. Find the current milestone (see "Milestone status" below and PRD section 14). Build **one milestone at a time**. Do not start the next milestone, or any part of it, until the owner has approved the current one as done.
 3. Before writing code for a milestone, give the owner a plain-English plan (files, tables, access rules, tests) and wait for approval.
 
