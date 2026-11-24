@@ -73,5 +73,4 @@ src/        App code: screens (Expo Router), components, hooks, API calls, desig
 supabase/   Migrations, Edge Functions and database tests
 tests/      Unit and integration tests
 scripts/    Check scripts used locally and in CI
-docs/       Milestone reviews and setup notes
 ```
