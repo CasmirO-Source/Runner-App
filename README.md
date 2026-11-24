@@ -1,6 +1,6 @@
 # Runner App (working title)
 
-A competitive running app for friend groups. Friends join monthly leagues, compete on distance on a live leaderboard and challenge each other to one-to-one duels. Every runner gets a **Stride rating**, a single number for how good a runner they are, and duels have a handicap mode so runners of different levels can compete fairly.
+A competitive running app for friend groups. Friends join monthly leagues, compete on distance on a live leaderboard and challenge each other to one-to-one duels. Every runner gets a **Stride rating**, a single number for how good a runner they are, and duels have a handicap mode so runners of different levels can compete fairly. Later, the **Arena** will match runners of a similar Stride rating against each other.
 
 The idea is simple: most people don't need another training plan, they need a reason not to skip a run. Not wanting to lose to your mates is a strong one. No real money is ever involved.
 
@@ -15,6 +15,7 @@ The idea is simple: most people don't need another training plan, they need a re
 | M3 Runs: runs database, server-side checks, duplicate detection, standings, manual entry | Built and tested, waiting on device builds and Health sync |
 | M4 Screenshot reader: log a run from a screenshot of any running app | In progress |
 | M5 to M9: Stride rating, duels, Pro analytics, subscriptions, launch | Not started |
+| After version 1: the Arena, matching runners of a similar level | Planned |
 
 ## Tech stack
 
@@ -72,5 +73,4 @@ supabase/   Migrations, Edge Functions and database tests
 tests/      Unit and integration tests
 scripts/    Check scripts used locally and in CI
 docs/       Milestone reviews and setup notes
-PRD.md      Product requirements: the source of truth for what gets built
 ```
